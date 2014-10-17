@@ -97,6 +97,7 @@ def _find_invalid_links(root_folder, files, output_file):
         invalid_urls = invalid_urls.union(_filter_invalid_urls(urls))
     if invalid_urls and output_file:
         _save_invalid_urls(invalid_urls, root_folder, output_file)
+    return invalid_urls
 
 
 def validate_content(args):
@@ -109,4 +110,4 @@ def validate_content(args):
     if input_file:
         _fix_invalid_links(root_folder, files, input_file)
     else:
-        _find_invalid_links(root_folder, files, output_file)
+        return _find_invalid_links(root_folder, files, output_file)

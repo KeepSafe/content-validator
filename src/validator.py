@@ -1,6 +1,7 @@
 import argparse
 import os
 import logging
+import unittest
 
 import url
 
@@ -29,7 +30,8 @@ def parse_args():
 def main():
     args = parse_args()
     init_log(args['loglevel'])
-    url.validate_content(args)
+    invalid_urls = url.validate_content(args)
+    assert len(invalid_urls) == 0
 
 
 def init_log(loglevel):
