@@ -4,6 +4,7 @@ from .. import url
 
 
 class TestUrls(TestCase):
+
     def _run_filter_invalid_urls(self, http_code):
         res = MagicMock()
         res.status_code = http_code
@@ -62,8 +63,28 @@ class TestUrls(TestCase):
 
     def test_filter_invalid_urls_happy_path(self):
         urls = ['dummy']
-        print(url)
         with patch('src.url._make_request') as mock_valid:
             mock_valid.return_value = 200
             invalid_urls = url._filter_invalid_urls(urls)
             self.assertEqual(set(), invalid_urls)
+
+    def test_replace_values_in_content_happy_path(self):
+        content = 'aa bb\ncc dd'
+        values_mapping = {'aa': 'bb', 'cc': 'dd'}
+
+        actual = url._replace_values_in_content(content, values_mapping)
+
+        self.assertEqual('bb bb\ndd dd', actual)
+
+    def _run_read_replace_values(self, content):
+        with patch('utils.file_content') as mock_content:
+            mock_content.return_value = content
+            return url._read_replace_values('dummy', 'dummy')
+
+    def test_read_replace_values_happy_path(self):
+        actual = self._run_read_replace_values('old_url=>new_url')
+        self.assertEqual({'old_url': 'new_url'}, actual)
+
+    def test_read_replace_values_strip_spaces(self):
+        actual = self._run_read_replace_values('old_url => new_url')
+        self.assertEqual({'old_url': 'new_url'}, actual)

@@ -7,6 +7,7 @@ import logging
 import utils
 
 URL_PATTERN = r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
+URLS_DELIMITER = '=>'
 
 
 def _print_and_flush(msg, **kwargs):
@@ -62,12 +63,50 @@ def _save_invalid_urls(urls, root_folder, output_file):
         fp.writelines(url + '\n' for url in urls)
 
 
+def _read_replace_values(root_folder, input_file):
+    values = {}
+    content = utils.file_content(root_folder, input_file)
+    for line in content.splitlines():
+        if URLS_DELIMITER in line:
+            old_url, new_url = line.split(URLS_DELIMITER)
+            values[old_url.strip()] = new_url.strip()
+    if not values:
+        raise ValueError('no mapping found, nothing will happen. please check the docs to get a valid mapping example')
+    return values
+
+
+def _replace_values_in_content(content, values_mapping):
+    for old_url, new_url in values_mapping.items():
+        content = re.sub(re.escape(old_url), new_url, content)
+    return content
+
+
+def _fix_invalid_links(root_folder, files, input_file):
+    values_mapping = _read_replace_values(root_folder, input_file)
+    for filename in files:
+        content = utils.file_content(root_folder, filename)
+        content = _replace_values_in_content(content, values_mapping)
+        with open(os.path.join(root_folder, filename), 'w') as fp:
+            fp.write(content)
+
+
+def _find_invalid_links(root_folder, files, output_file):
+    invalid_urls = set()
+    for content in utils.files_content(root_folder, files):
+        urls = _urls_from_content(content)
+        invalid_urls = invalid_urls.union(_filter_invalid_urls(urls))
+    if invalid_urls and output_file:
+        _save_invalid_urls(invalid_urls, root_folder, output_file)
+
+
 def validate_content(args):
     files = args['files']
     root_folder = args['root_folder']
-    invalid_urls = {}
-    for content in utils.files_content(root_folder, files):
-        urls = _urls_from_content(content)
-        invalid_urls = invalid_urls + _filter_invalid_urls(urls)
-    if invalid_urls and args['output_file']:
-        _save_invalid_urls(invalid_urls, root_folder, args['output_file'])
+    output_file = args['output_file']
+    input_file = args['input_file']
+    if output_file and input_file:
+        raise ValueError('Can\'t both define input and output file')
+    if input_file:
+        _fix_invalid_links(root_folder, files, input_file)
+    else:
+        _find_invalid_links(root_folder, files, output_file)
