@@ -32,6 +32,6 @@ setup(name='content-validator',
       install_requires = reqs,
       entry_points={
           'console_scripts': [
-              'ks-content-validator = validator:main']
+              'content-validator = validator:main']
       },
       include_package_data = False)
