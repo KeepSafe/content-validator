@@ -9,24 +9,24 @@ class TestUrls(TestCase):
         res.status_code = http_code
         with patch('requests.get') as mock_req:
             mock_req.return_value = res
-            return url._filter_invalid_urls(['dummy'])
+            return url._filter_invalid_urls({'dummy'})
 
     def test_filter_invalid_urls_success_status(self):
         for code in [200, 201]:
             actual = self._run_filter_invalid_urls(code)
-            self.assertEqual({'dummy'}, actual)
+            self.assertEqual(set(), actual)
 
     def test_filter_invalid_urls_fail_status(self):
         for code in [400, 404, 500]:
             actual = self._run_filter_invalid_urls(code)
-            self.assertEqual({}, actual)
+            self.assertEqual({'dummy'}, actual)
 
     def test_retries_tree_times_for_500(self):
         res = MagicMock()
         res.status_code = 500
         with patch('requests.get') as mock_req:
             mock_req.return_value = res
-            url._filter_invalid_urls(['dummy'])
+            url._filter_invalid_urls({'dummy'})
             self.assertEqual(3, mock_req.call_count)
 
     def test_urls_from_content_happy_path(self):
@@ -62,7 +62,8 @@ class TestUrls(TestCase):
 
     def test_filter_invalid_urls_happy_path(self):
         urls = ['dummy']
-        with patch('url_validator._is_url_valid') as mock_valid:
-            mock_valid.return_value = True
+        print(url)
+        with patch('src.url._make_request') as mock_valid:
+            mock_valid.return_value = 200
             invalid_urls = url._filter_invalid_urls(urls)
-            self.assertEqual({}, invalid_urls)
+            self.assertEqual(set(), invalid_urls)
