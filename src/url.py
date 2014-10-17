@@ -3,6 +3,7 @@ import re
 import os
 import sys
 import logging
+import fnmatch
 
 import utils
 
@@ -24,8 +25,8 @@ def _make_request(url):
 
 
 def _retry_request(url, times=2, status=500):
-    new_status = -1
-    while times > 0 or status != new_status:
+    new_status = status
+    while times > 0 and status == new_status:
         _print_and_flush('retrying ' + url, end=' ')
         new_status = _make_request(url)
         if 200 <= new_status < 300:
@@ -81,33 +82,41 @@ def _replace_values_in_content(content, values_mapping):
     return content
 
 
-def _fix_invalid_links(root_folder, files, input_file):
+def _fix_invalid_links(root_folder, input_file, pattern):
     values_mapping = _read_replace_values(root_folder, input_file)
-    for filename in files:
-        content = utils.file_content(root_folder, filename)
-        content = _replace_values_in_content(content, values_mapping)
-        with open(os.path.join(root_folder, filename), 'w') as fp:
-            fp.write(content)
+    for root, _, files in os.walk(root_folder):
+        for filename in files:
+            if fnmatch.fnmatch(filename, pattern):
+                content = utils.file_content(root_folder, filename)
+                content = _replace_values_in_content(content, values_mapping)
+                with open(os.path.join(root_folder, filename), 'w') as fp:
+                    fp.write(content)
 
 
-def _find_invalid_links(root_folder, files, output_file):
+def _find_invalid_links(root_folder, output_file, pattern):
     invalid_urls = set()
-    for content in utils.files_content(root_folder, files):
-        urls = _urls_from_content(content)
-        invalid_urls = invalid_urls.union(_filter_invalid_urls(urls))
+    for root, _, files in os.walk(root_folder):
+        for filename in files:
+            if fnmatch.fnmatch(filename, pattern):
+                content = utils.file_content(root_folder, filename)
+                urls = _urls_from_content(content)
+                invalid_urls = invalid_urls.union(_filter_invalid_urls(urls))
     if invalid_urls and output_file:
         _save_invalid_urls(invalid_urls, root_folder, output_file)
     return invalid_urls
 
 
 def validate_content(args):
-    files = args['files']
     root_folder = args['root_folder']
     output_file = args['output_file']
     input_file = args['input_file']
+    pattern = args['filter']
     if output_file and input_file:
         raise ValueError('Can\'t both define input and output file')
+    if not (output_file and input_file):
+        invalid_urls = _find_invalid_links(root_folder, output_file, pattern)
+        assert len(invalid_urls) == 0, 'there are invalid urls in the content'
     if input_file:
-        _fix_invalid_links(root_folder, files, input_file)
-    else:
-        return _find_invalid_links(root_folder, files, output_file)
+        _fix_invalid_links(root_folder, input_file, pattern)
+    if output_file:
+        _find_invalid_links(root_folder, output_file, pattern)
