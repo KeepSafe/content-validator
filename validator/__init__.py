@@ -2,7 +2,7 @@ import argparse
 import os
 import logging
 
-import url
+from . import url
 
 DEFAULE_LOG_LEVEL = 'WARNING'
 

@@ -1,6 +1,7 @@
 from unittest import TestCase
 from unittest.mock import patch, MagicMock
-from .. import url
+
+from validator import url
 
 
 class TestUrls(TestCase):
@@ -63,7 +64,7 @@ class TestUrls(TestCase):
 
     def test_filter_invalid_urls_happy_path(self):
         urls = ['dummy']
-        with patch('src.url._make_request') as mock_valid:
+        with patch('validator.url._make_request') as mock_valid:
             mock_valid.return_value = 200
             invalid_urls = url._filter_invalid_urls(urls)
             self.assertEqual(set(), invalid_urls)
@@ -77,7 +78,7 @@ class TestUrls(TestCase):
         self.assertEqual('bb bb\ndd dd', actual)
 
     def _run_read_replace_values(self, content):
-        with patch('utils.file_content') as mock_content:
+        with patch('validator.utils.file_content') as mock_content:
             mock_content.return_value = content
             return url._read_replace_values('dummy', 'dummy')
 
