@@ -98,9 +98,10 @@ def _find_invalid_links(root_folder, output_file, pattern):
     for root, _, files in os.walk(root_folder):
         for filename in files:
             if fnmatch.fnmatch(filename, pattern):
-                content = utils.file_content(root_folder, filename)
-                urls = _urls_from_content(content)
-                invalid_urls = invalid_urls.union(_filter_invalid_urls(urls))
+                content = utils.file_content(root, filename)
+                if content:
+                    urls = _urls_from_content(content)
+                    invalid_urls = invalid_urls.union(_filter_invalid_urls(urls))
     if invalid_urls and output_file:
         _save_invalid_urls(invalid_urls, root_folder, output_file)
     return invalid_urls

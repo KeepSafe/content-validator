@@ -89,3 +89,4 @@ class TestUrls(TestCase):
     def test_read_replace_values_strip_spaces(self):
         actual = self._run_read_replace_values('old_url => new_url')
         self.assertEqual({'old_url': 'new_url'}, actual)
+        
