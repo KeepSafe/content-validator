@@ -1,4 +1,10 @@
 import os
+from enum import Enum
+
+
+# TODO move to a better place
+class FileFormat(Enum):
+    md = 1
 
 
 def file_content(root_folder, filename):
@@ -6,6 +12,7 @@ def file_content(root_folder, filename):
     if os.path.isfile(filepath):
         with open(filepath) as fp:
             return fp.read()
+
 
 def save_seq_to_file(urls, filepath):
     with open(filepath, 'w') as fp:
