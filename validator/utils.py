@@ -5,6 +5,7 @@ from enum import Enum
 # TODO move to a better place
 class FileFormat(Enum):
     md = 1
+    xml = 2
 
 
 def file_content(root_folder, filename):
