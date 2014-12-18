@@ -2,49 +2,53 @@ import os
 
 from .files import files
 from .parser import parser
-from .checks import check, CheckType
+from .checks import check_links, check_structure
 from .utils import FileFormat
-from .result import ValidationResult
 
 
 class Validator(object):
 
     def __init__(self, file_format):
-        self._file_format = file_format
-        self._checks = []
-        self.result = ValidationResult()
+        self.file_format = file_format
+        self.content_checks = []
+        self.compare_checks = []
 
     def files(self, pattern='*', directory=None, lang='en-US'):
         self.directory = directory or os.getcwd()
-        self._files = files(pattern, self.directory, lang)
+        self.files = files(pattern, self.directory, lang)
         return self
 
     def parse(self, file_format=None, **kwargs):
-        file_format = file_format or self._file_format
-        self._parser = parser(file_format, **kwargs)
+        file_format = file_format or self.file_format
+        self.parser = parser(file_format, **kwargs)
         return self
 
     def check_structure(self):
-        self._checks.append(check(CheckType.structure, self.result))
+        self.compare_checks.append(check_structure())
         return self
 
     def check_links(self):
-        self._checks.append(check(CheckType.link, self.result))
+        self.content_checks.append(check_links())
         return self
 
     def run(self):
-        for lang_files in self._files:
-            original_file = lang_files.pop()
-            original_path = os.path.join(self.directory, original_file)
-            original_content = self._parser.parse(original_path)
-            for checker in self._checks:
-                checker.set_original(original_content)
+        errors = []
+        for lang_files in self.files:
+            for checker in self.content_checks:
                 for lang_file in lang_files:
-                    print('compering {} with {}'.format(original_file, lang_file))
-                    lang_path = os.path.join(self.directory, lang_file)
-                    content = self._parser.parse(lang_path)
-                    checker.check(content)
-        return self.result
+                    file_path = os.path.join(self.directory, lang_file)
+                    error = checker.validate(self.parser, file_path)
+                    if error:
+                        errors.append(error)
+            for checker in self.compare_checks:
+                base_file = lang_files[0]
+                base_path = os.path.join(self.directory, base_file)
+                for lang_file in lang_files[1:]:
+                    file_path = os.path.join(self.directory, lang_file)
+                    error = checker.compare(self.parser, base_path, file_path)
+                    if error:
+                        errors.append(error)
+        return errors
 
 
 def validator(file_format):
