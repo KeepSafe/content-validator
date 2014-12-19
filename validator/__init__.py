@@ -3,24 +3,27 @@ import os
 from .files import files
 from .parser import parser
 from .checks import check_links, check_structure
+from .diff import diff
 from .utils import FileFormat
+from .errors import ValidationError
 
 
 class Validator(object):
 
-    def __init__(self, file_format):
-        self.file_format = file_format
+    def __init__(self, data_format):
+        self.data_format = data_format
         self.content_checks = []
         self.compare_checks = []
+        self.diff = None
 
     def files(self, pattern='*', directory=None, lang='en-US'):
         self.directory = directory or os.getcwd()
         self.files = files(pattern, self.directory, lang)
         return self
 
-    def parse(self, file_format=None, **kwargs):
-        file_format = file_format or self.file_format
-        self.parser = parser(file_format, **kwargs)
+    def parse(self, input_format=None, **kwargs):
+        input_format = input_format or self.data_format
+        self.parser = parser(input_format, **kwargs)
         return self
 
     def check_structure(self):
@@ -31,23 +34,35 @@ class Validator(object):
         self.content_checks.append(check_links())
         return self
 
+    def save_diff(self, output_directory='output'):
+        self.diff = diff(output_directory)
+        return self
+
+    def _save_diff(self, errors):
+        for error in errors.compare_errors:
+            self.diff.diff_to_file(self.parser, error.base_file_path, error.other_file_path)
+
     def run(self):
-        errors = []
+        errors = ValidationError()
         for lang_files in self.files:
             for checker in self.content_checks:
                 for lang_file in lang_files:
                     file_path = os.path.join(self.directory, lang_file)
                     error = checker.validate(self.parser, file_path)
                     if error:
-                        errors.append(error)
+                        errors.add_content_error(error)
             for checker in self.compare_checks:
-                base_file = lang_files[0]
+                base_file = lang_files[-1]
                 base_path = os.path.join(self.directory, base_file)
-                for lang_file in lang_files[1:]:
+                for lang_file in lang_files[:-1]:
                     file_path = os.path.join(self.directory, lang_file)
                     error = checker.compare(self.parser, base_path, file_path)
                     if error:
-                        errors.append(error)
+                        errors.add_compare_error(error)
+
+        if self.diff:
+            self._save_diff(errors)
+
         return errors
 
 

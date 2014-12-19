@@ -17,7 +17,7 @@ class TestValidator(TestCase):
             .check_links() \
             .run()
 
-        self.assertTrue(len(res) == 0)
+        self.assertFalse(res)
 
     @patch('requests.get')
     def test_validate_markdown_link_fail(self, mock_get):
@@ -28,7 +28,7 @@ class TestValidator(TestCase):
             .check_links() \
             .run()
 
-        self.assertFalse(len(res) == 0)
+        self.assertTrue(res)
 
     def test_validate_markdown_structure_happy_path(self):
         res = validator(FileFormat.md) \
@@ -37,7 +37,7 @@ class TestValidator(TestCase):
             .check_structure() \
             .run()
 
-        self.assertTrue(len(res) == 0)
+        self.assertFalse(res)
 
     def test_validate_xml_structure_happy_path(self):
         res = validator(FileFormat.md) \
@@ -46,4 +46,4 @@ class TestValidator(TestCase):
             .check_structure() \
             .run()
 
-        self.assertTrue(len(res) == 0)
+        self.assertFalse(res)

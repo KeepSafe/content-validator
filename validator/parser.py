@@ -11,7 +11,7 @@ class MarkdownParser(object):
 
     def parse(self, file_path):
         if not os.path.exists(file_path):
-            return ''
+            raise ValueError('{} file does not exist'.format(file_path))
         with open(file_path) as fp:
             data = fp.read()
             return markdown.markdown(data)
