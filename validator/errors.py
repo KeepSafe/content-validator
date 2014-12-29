@@ -45,7 +45,7 @@ class CompareError(BaseError):
         self.other_file_path = other_file_path
 
     def __str__(self):
-        msg = 'Errors for files comparison between base file {} and other file {}\n'.format(
+        msg = 'Errors for files comparison between file (1) {} and file (2) {}\n\n'.format(
             self.base_file_path, self.other_file_path)
         msg = msg + super().__str__()
         return msg
@@ -58,7 +58,7 @@ class TagsCountError(object):
         self.other_tag_count = other_tag_count
 
     def __str__(self):
-        return '\tbase file has {} tags while other file has {} tags'.format(self.base_tag_count, self.other_tag_count)
+        return 'file (1) has {} tags while file (2) has {} tags\n\n'.format(self.base_tag_count, self.other_tag_count)
 
 
 class TagNameError(object):
@@ -67,8 +67,32 @@ class TagNameError(object):
         self.other_tag_name = other_tag_name
 
     def __str__(self):
-        return '\tbase file has {} tag while other file has {} tag in that place'.format(self.base_tag_name, self.other_tag_name)
+        return 'file (1) has {} tag while file (2) has {} tag in that place'.format(self.base_tag_name, self.other_tag_name)
 
+class MarkdownExtraElementError(object):
+    def __init__(self, tag_name, content):
+        self.tag_name = tag_name
+        self.content = content
+
+    def __str__(self):
+        return 'additional content in the (2) file {} with data:\n\n{}\n\n'.format(self.tag_name, self.content)
+
+
+class MarkdownCompareElementError(object):
+    def __init__(self, base_tag_name, other_tag_name, base_content, other_content):
+        self.base_tag_name = base_tag_name
+        self.other_tag_name = other_tag_name
+        self.base_content = base_content
+        self.other_content = other_content
+
+    def __str__(self):
+        return 'file (1) has tag {} with content:\n\n{}\n\n while file (2) has tag {} with content:\n\n{}\n\n'.format(self.base_tag_name, self.other_tag_name, self.base_content, self.other_content)
+
+    def _replace_new_line(self, content):
+        return content
+
+    def _replace_space(self, content):
+        return content
 
 class MissingFileError(object):
     def __init__(self, file_path):

@@ -7,13 +7,14 @@ class TestDiff(TestCase):
     def setUp(self):
         self.diff = Diff('/path/to/dir')
         self.parser = MagicMock()
+        self.reader = MagicMock()
 
     @patch('os.makedirs')
     def test_diff_happy_path(self, mock_open):
         m = mock_open()
         with patch('builtins.open', m, create=True):
             self.parser.parse.side_effect = ['<body><p>hello</p></body>', '<body><p>hello</p><p>world</p></body>']
-            self.diff.diff_to_file(self.parser, '/path/to/dummy1.py', '/path/to/dummy1.py')
+            self.diff.diff_to_file(self.parser, self.reader, '/path/to/dummy1.py', '/path/to/dummy1.py')
         self.assertTrue(m().__enter__().write.called)
 
     def test_get_lang(self):

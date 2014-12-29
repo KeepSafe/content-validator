@@ -8,6 +8,7 @@ from bs4 import element
 class FileFormat(Enum):
     md = 1
     xml = 2
+    txt = 3
 
 _junk_tag_names = ['strong', 'em']
 

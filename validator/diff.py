@@ -10,8 +10,8 @@ class Diff(object):
     def __init__(self, output_dir):
         self.output_dir = output_dir
 
-    def _pretty_html(self, parser, file_path):
-        content = parser.parse(file_path)
+    def _pretty_html(self, parser, reader, file_path):
+        content = parser.parse(reader.read(file_path))
         soup = BeautifulSoup(content)
         clean_soup = clean_html_tree(soup)
         return soup.prettify()
@@ -25,12 +25,12 @@ class Diff(object):
                 lang = lang + c2
         return lang or 'base'
 
-    def diff_to_file(self, parser, base_path, other_path):
+    def diff_to_file(self, parser, reader, base_path, other_path):
         base_name, _ = os.path.splitext(os.path.basename(base_path))
         other_name, _ = os.path.splitext(os.path.basename(other_path))
         output_dir = os.path.join(self.output_dir, base_name)
-        base_html = self._pretty_html(parser, base_path)
-        other_html = self._pretty_html(parser, other_path)
+        base_html = self._pretty_html(parser, reader, base_path)
+        other_html = self._pretty_html(parser, reader, other_path)
         lang = self._get_lang(base_path, other_path)
 
         htmldiff = difflib.HtmlDiff(tabsize=4)
@@ -42,6 +42,16 @@ class Diff(object):
         with open(diff_path, 'w') as fp:
             fp.write(diff_content)
 
+    def error_to_file(self, base_path, other_path, error):
+        base_name, _ = os.path.splitext(os.path.basename(base_path))
+        other_name, _ = os.path.splitext(os.path.basename(other_path))
+        lang = self._get_lang(base_path, other_path)
+        output_dir = os.path.join(self.output_dir, base_name)
+        error_path = os.path.join(output_dir, '{}.{}.txt'.format(other_name, lang))
+
+        os.makedirs(output_dir, exist_ok=True)
+        with open(error_path, 'w') as fp:
+            fp.write(str(error))
 
 def diff(output_dir):
     return Diff(output_dir)
