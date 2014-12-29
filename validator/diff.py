@@ -46,8 +46,8 @@ class Diff(object):
         base_name, _ = os.path.splitext(os.path.basename(base_path))
         other_name, _ = os.path.splitext(os.path.basename(other_path))
         lang = self._get_lang(base_path, other_path)
-        output_dir = os.path.join(self.output_dir, base_name)
-        error_path = os.path.join(output_dir, '{}.{}.txt'.format(other_name, lang))
+        output_dir = os.path.join(self.output_dir, lang)
+        error_path = os.path.join(output_dir, '{}.txt'.format(other_name, lang))
 
         os.makedirs(output_dir, exist_ok=True)
         with open(error_path, 'w') as fp:
