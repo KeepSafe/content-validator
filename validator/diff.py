@@ -28,15 +28,15 @@ class Diff(object):
     def diff_to_file(self, parser, reader, base_path, other_path):
         base_name, _ = os.path.splitext(os.path.basename(base_path))
         other_name, _ = os.path.splitext(os.path.basename(other_path))
-        output_dir = os.path.join(self.output_dir, base_name)
         base_html = self._pretty_html(parser, reader, base_path)
         other_html = self._pretty_html(parser, reader, other_path)
         lang = self._get_lang(base_path, other_path)
+        output_dir = os.path.join(self.output_dir, lang)
 
         htmldiff = difflib.HtmlDiff(tabsize=4)
         diff_content = htmldiff.make_file(
             base_html.splitlines(), other_html.splitlines(), context=True)
-        diff_path = os.path.join(output_dir, '{}.{}.html'.format(other_name, lang))
+        diff_path = os.path.join(output_dir, '{}.html'.format(other_name))
 
         os.makedirs(output_dir, exist_ok=True)
         with open(diff_path, 'w') as fp:
@@ -47,7 +47,7 @@ class Diff(object):
         other_name, _ = os.path.splitext(os.path.basename(other_path))
         lang = self._get_lang(base_path, other_path)
         output_dir = os.path.join(self.output_dir, lang)
-        error_path = os.path.join(output_dir, '{}.txt'.format(other_name, lang))
+        error_path = os.path.join(output_dir, '{}.txt'.format(other_name))
 
         os.makedirs(output_dir, exist_ok=True)
         with open(error_path, 'w') as fp:

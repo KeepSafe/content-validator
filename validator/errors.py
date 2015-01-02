@@ -86,7 +86,7 @@ class MarkdownCompareElementError(object):
         self.other_content = other_content
 
     def __str__(self):
-        return 'file (1) has tag {} with content:\n\n{}\n\n while file (2) has tag {} with content:\n\n{}\n\n'.format(self.base_tag_name, self.other_tag_name, self.base_content, self.other_content)
+        return 'file (1) has tag {} with content:\n\n{}\n\nwhile file (2) has tag {} with content:\n\n{}\n\n'.format(self.base_tag_name, self.other_tag_name, self.base_content, self.other_content)
 
     def _replace_new_line(self, content):
         return content
@@ -99,7 +99,7 @@ class MissingFileError(object):
         self.file_path = file_path
 
     def __str__(self):
-        return '\t{} file is missing'.format(self.file_path)
+        return '{} file is missing'.format(self.file_path)
 
 class ValidationError(object):
     def __init__(self):
