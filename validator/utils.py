@@ -9,6 +9,7 @@ class FileFormat(Enum):
     md = 1
     xml = 2
     txt = 3
+    csv = 4
 
 _junk_tag_names = ['strong', 'em']
 

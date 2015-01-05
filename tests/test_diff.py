@@ -20,3 +20,7 @@ class TestDiff(TestCase):
     def test_get_lang(self):
         lang = self.diff._get_lang('/path/to/en/file.md', '/path/to/fr/file.md')
         self.assertEqual('fr', lang)
+
+    def test_get_lang_same_start(self):
+        lang = self.diff._get_lang('/path/to/en/file.md', '/path/to/es/file.md')
+        self.assertEqual('es', lang)

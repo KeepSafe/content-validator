@@ -39,7 +39,7 @@ class Validator(object):
         self.content_checks.append(check_links())
         return self
 
-    def save_diff(self, output_directory='output'):
+    def save_diff(self, output_directory='errors'):
         self.diff = diff(output_directory)
         return self
 

@@ -21,6 +21,14 @@ class MarkdownParser(object):
         return markdown.markdown(data)
 
 
+class CsvParser(object):
+    def __init__(self, **kwargs):
+        pass
+
+    def parse(self, data):
+        return '\n'.join(data.split(','))
+
+
 class XmlReader(object):
     def __init__(self, **kwargs):
         self.query = kwargs['query']
@@ -36,6 +44,7 @@ class XmlReader(object):
 
 parsers = {
     FileFormat.md: MarkdownParser,
+    FileFormat.csv: CsvParser,
 }
 
 readers = {

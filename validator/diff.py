@@ -55,13 +55,12 @@ class Diff(object):
         return clean_soup.prettify()
 
     def _get_lang(self, path1, path2):
-        lang = ''
-        for c1, c2 in zip(path1, path2):
-            if (c2 == '/' or c2 == '\\') and lang:
-                break
-            if c1 != c2 or lang:
-                lang = lang + c2
-        return lang or 'base'
+        s1 = path1.split('/')
+        s2 = path2.split('/')
+        for c1, c2 in zip(s1, s2):
+            if c1 != c2 or '.' in (c1 + c2):
+                return c2
+        return 'base'
 
     def _add_content(self, diff_soup, tag_id, content):
         tags = diff_soup.select('#{}'.format(tag_id))

@@ -4,6 +4,8 @@ from markdown import Markdown
 from markdown.inlinepatterns import Pattern
 from itertools import zip_longest
 import requests
+import re
+import logging
 
 from .errors import LinkError, TagsCountError, TagNameError, ContentError, CompareError, MissingFileError, MarkdownCompareElementError, MarkdownExtraElementError
 from .utils import clean_html_tree
@@ -23,11 +25,12 @@ class CompareCheck(object):
 
 class LinkCheck(ContentCheck):
     retry_max_count = 3
+    url_pattern = r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
 
     def _make_request(self, url):
         try:
             return requests.get(url).status_code
-        except Error as e:
+        except Exception as e:
             logging.error(e)
             return 500
 
@@ -47,14 +50,12 @@ class LinkCheck(ContentCheck):
 
     def validate(self, parser, reader, file_path):
         content = parser.parse(reader.read(file_path))
-        soup = BeautifulSoup(content)
-        links = soup.find_all('a')
         error = ContentError(file_path)
+        links = set(match.group().strip(')').strip('.') for match in re.finditer(self.url_pattern, content))
         for link in links:
-            url = link.get('href') or link.get_text()
-            status_code = self._url_status_code(url)
+            status_code = self._url_status_code(link.strip(')'))
             if not (200 <= status_code < 300):
-                error.add_error(LinkError(url, status_code))
+                error.add_error(LinkError(link, status_code))
         return error
 
 
@@ -194,6 +195,7 @@ def check_links():
 
 def check_structure():
     return StructureCheck()
+
 
 def check_markdown():
     return MarkdownCheck()
