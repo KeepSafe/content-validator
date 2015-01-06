@@ -4,14 +4,6 @@ import xml.etree.ElementTree as ET
 
 from .utils import FileFormat
 
-class TxtReader(object):
-
-    def read(self, file_path):
-        if not os.path.exists(file_path):
-            raise ValueError('{} file does not exist'.format(file_path))
-        with open(file_path) as fp:
-            return fp.read()
-
 
 class MarkdownParser(object):
     def __init__(self, **kwargs):
@@ -29,6 +21,15 @@ class CsvParser(object):
         return '\n'.join(data.split(','))
 
 
+class TxtParser(object):
+    def __init__(self, **kwargs):
+        pass
+
+    def parse(self, data):
+        return data
+
+
+
 class XmlReader(object):
     def __init__(self, **kwargs):
         self.query = kwargs['query']
@@ -42,14 +43,24 @@ class XmlReader(object):
             return '\n\n'.join(text_elements)
 
 
+class TxtReader(object):
+
+    def read(self, file_path):
+        if not os.path.exists(file_path):
+            raise ValueError('{} file does not exist'.format(file_path))
+        with open(file_path) as fp:
+            return fp.read()
+
+
 parsers = {
     FileFormat.md: MarkdownParser,
     FileFormat.csv: CsvParser,
+    FileFormat.txt: TxtParser
 }
 
 readers = {
     FileFormat.txt: TxtReader,
-    FileFormat.xml: XmlReader,
+    FileFormat.xml: XmlReader
 }
 
 def parser(file_format, **kwargs):
