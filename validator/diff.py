@@ -33,9 +33,12 @@ html_diff = """<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
         <colgroup></colgroup> <colgroup></colgroup> <colgroup></colgroup>
         <colgroup></colgroup> <colgroup></colgroup> <colgroup></colgroup>
 
+        <thead>
+        <tr><td width="50%" id="left_path"></td><td width="50%" id="right_path"></td></tr>
+        </thead>
+
         <tbody>
-        <tr><td id="left_path"></td><td id="right_path"></td></tr>
-        <tr><td><pre id="left_html"></pre></td><td><pre id="right_html"></pre></td></tr>
+        <tr><td width="50%"><p id="left_html"></p></td><td width="50%"><p id="right_html"></p></td></tr>
         </tbody>
     </table>
 </body>
@@ -80,8 +83,8 @@ class Diff(object):
         diff_soup = BeautifulSoup(html_diff)
         self._add_content(diff_soup, 'left_path', base_path)
         self._add_content(diff_soup, 'right_path', other_path)
-        self._add_content(diff_soup, 'left_html', base_soup.prettify())
-        self._add_content(diff_soup, 'right_html', other_soup.prettify())
+        self._add_content(diff_soup, 'left_html', base_soup.body)
+        self._add_content(diff_soup, 'right_html', other_soup.body)
 
         diff_content = diff_soup.prettify()
         diff_path = os.path.join(output_dir, '{}.html'.format(other_name))
