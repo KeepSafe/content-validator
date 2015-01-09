@@ -6,8 +6,10 @@ from itertools import zip_longest
 import requests
 import re
 import logging
+import difflib
+import html2text
 
-from .errors import LinkError, TagsCountError, TagNameError, ContentError, CompareError, MissingFileError, MarkdownCompareElementError, MarkdownExtraElementError
+from .errors import LinkError, TagsCountError, TagNameError, ContentError, CompareError, MissingFileError, MarkdownCompareElementError, MarkdownExtraElementError, MarkdownCompareError
 from .utils import clean_html_tree
 
 
@@ -61,30 +63,24 @@ class LinkCheck(ContentCheck):
 
 class StructureCheck(CompareCheck):
 
-    def _build_tree(self, content):
+    def _pretty_html(self, parser, reader, file_path, replace_txt=''):
+        content = parser.parse(reader.read(file_path))
         soup = BeautifulSoup(content)
-        clean_soup = clean_html_tree(soup)
-        return clean_soup
+        clean_soup = clean_html_tree(soup, replace_txt)
+        return clean_soup.prettify()
 
-    def compare(self, parser, reader, base_file_path, other_file_path):
-        error = CompareError(base_file_path, other_file_path)
+    def compare(self, parser, reader, base_path, other_path):
+        error = CompareError(base_path, other_path)
 
-        base_content = parser.parse(reader.read(base_file_path))
-        other_content = parser.parse(reader.read(other_file_path))
-        if not other_content:
-            error.add_error(MissingFileError(other_file_path))
-            return error
+        base_html = self._pretty_html(parser, reader, base_path, 'placeholder')
+        other_html = self._pretty_html(parser, reader, other_path, 'placeholder')
+        base_text = html2text.html2text(base_html)
+        other_text = html2text.html2text(other_html)
 
-        base_tree = self._build_tree(base_content)
-        other_tree = self._build_tree(other_content)
-        for base_node, other_node in zip(base_tree.descendants, other_tree.descendants):
-            if base_node.name != other_node.name:
-                error.add_error(TagNameError(base_node.name, other_node.name))
-
-        base_tags_count = len(base_tree.find_all())
-        other_tags_count = len(other_tree.find_all())
-        if base_tags_count != other_tags_count:
-            error.add_error(TagsCountError(base_tags_count, other_tags_count))
+        if base_text != other_text:
+            differ = difflib.Differ()
+            diff = list(differ.compare(base_text.splitlines(keepends=True), other_text.splitlines(keepends=True)))
+            error.add_error(MarkdownCompareError('\n'.join(diff)))
 
         return error
 

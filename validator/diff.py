@@ -91,8 +91,10 @@ class Diff(object):
         diff_soup = BeautifulSoup(html_diff)
         self._add_content(diff_soup, 'left_path', base_path)
         self._add_content(diff_soup, 'right_path', other_path)
-        self._add_content(diff_soup, 'left_html', base_soup.body)
-        self._add_content(diff_soup, 'right_html', other_soup.body)
+        if base_soup.body:
+            self._add_content(diff_soup, 'left_html', base_soup.body)
+        if other_soup.body:
+            self._add_content(diff_soup, 'right_html', other_soup.body)
         self._add_content(diff_soup, 'md_diff', BeautifulSoup(diff_content))
 
         diff_content = diff_soup.prettify()

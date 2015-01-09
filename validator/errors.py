@@ -78,6 +78,14 @@ class MarkdownExtraElementError(object):
         return 'additional content in the (2) file {} with data:\n\n{}\n\n'.format(self.tag_name, self.content)
 
 
+class MarkdownCompareError(object):
+    def __init__(self, diff):
+        self.diff = diff
+
+    def __str__(self):
+        return 'the difference between two files:\n\n{}\n\n'.format(self.diff)
+
+
 class MarkdownCompareElementError(object):
     def __init__(self, base_tag_name, other_tag_name, base_content, other_content):
         self.base_tag_name = base_tag_name

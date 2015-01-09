@@ -46,7 +46,7 @@ class Validator(object):
     def _save_diff(self, errors):
         for error in errors.compare_errors:
             self.diff.html_to_file(self.parser, self.reader, error.base_file_path, error.other_file_path)
-            self.diff.error_to_file(error.base_file_path, error.other_file_path, error)
+            # self.diff.error_to_file(error.base_file_path, error.other_file_path, error)
 
     def run(self):
         errors = ValidationError()
