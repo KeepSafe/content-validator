@@ -1,39 +1,63 @@
-from enum import Enum
-from bs4 import BeautifulSoup
-from markdown import Markdown
-from markdown.inlinepatterns import Pattern
-from itertools import zip_longest
 import requests
 import re
-import logging
 import difflib
-import html2text
+import hoep
+from bs4 import BeautifulSoup, element
+from collections import defaultdict
+from html2text import html2text
 
-from .errors import LinkError, TagsCountError, TagNameError, ContentError, CompareError, MissingFileError, MarkdownCompareElementError, MarkdownExtraElementError, MarkdownCompareError
-from .utils import clean_html_tree
+from .reports import ContentError, UrlError, ComparisonError, MarkdownError
+from .fs import Filetype, read_content
+from .parsers import create_parser
 
 
 class ContentCheck(object):
 
-    def validate(parser, reader, file_path):
+    def _check_content(self, content):
         pass
 
+    def check(self, paths, parser):
+        errors = {}
+        for path in paths:
+            content = parser.parse(read_content(path))
+            error = self._check_content(content)
+            if error:
+                errors[path] = ContentError(path, error)
+        return errors
 
-class CompareCheck(object):
 
-    def compare(self, parser, reader, base_file_path, other_file_path):
+class ComparisonCheck(object):
+
+    def _compare(self, base, other):
         pass
 
+    def check(self, paths, parser):
+        if not paths:
+            return {}
 
-class LinkCheck(ContentCheck):
+        errors = {}
+        base_path = paths.pop(0)
+        base = parser.parse(read_content(base_path))
+        for other_path in paths:
+            try:
+                other = parser.parse(read_content(other_path))
+            except FileNotFoundError:
+                other = ''
+            error = self._compare(base, other)
+            if error:
+                errors[other_path] = ComparisonError(base_path, other_path, error)
+        return errors
+
+
+class TxtUrlCheck(ContentCheck):
     retry_max_count = 3
     url_pattern = r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
 
     def _make_request(self, url):
         try:
             return requests.get(url).status_code
-        except Exception as e:
-            logging.error(e)
+        except Exception:
+            logging.exception('Error making request to %s', url)
             return 500
 
     def _retry_request(self, url, status):
@@ -44,154 +68,100 @@ class LinkCheck(ContentCheck):
             times = times + 1
         return new_status
 
-    def _url_status_code(self, url):
+    def _request_status_code(self, url):
         status = self._make_request(url)
         if status == 500:
             return self._retry_request(url, status)
         return status
 
-    def validate(self, parser, reader, file_path):
-        content = parser.parse(reader.read(file_path))
-        error = ContentError(file_path)
-        links = set(match.group().strip(')').strip('.') for match in re.finditer(self.url_pattern, content))
-        for link in links:
-            status_code = self._url_status_code(link.strip(')'))
-            if not (200 <= status_code < 300):
-                error.add_error(LinkError(link, status_code))
-        return error
+    def _is_valid(self, status_code):
+        return 200 <= status_code < 300
 
+    def _extract_urls(self, content):
+        return set(match.group().strip(')').strip('.') for match in re.finditer(self.url_pattern, content))
 
-class StructureCheck(CompareCheck):
-
-    def _pretty_html(self, parser, reader, file_path, replace_txt=''):
-        content = parser.parse(reader.read(file_path))
-        soup = BeautifulSoup(content)
-        clean_soup = clean_html_tree(soup, replace_txt)
-        return clean_soup.prettify()
-
-    def compare(self, parser, reader, base_path, other_path):
-        error = CompareError(base_path, other_path)
-
-        base_html = self._pretty_html(parser, reader, base_path, 'placeholder')
-        other_html = self._pretty_html(parser, reader, other_path, 'placeholder')
-        base_text = html2text.html2text(base_html)
-        other_text = html2text.html2text(other_html)
-
-        if base_text != other_text:
-            differ = difflib.Differ()
-            diff = list(differ.compare(base_text.splitlines(keepends=True), other_text.splitlines(keepends=True)))
-            error.add_error(MarkdownCompareError('\n'.join(diff)))
-
-        return error
-
-
-class RecordItem(object):
-    def __init__(self, element, data):
-        self.element = element
-        self.data = data
-
-    def __str__(self):
-        return '{}: {}'.format(self.element, self.data)
-
-    def __repr__(self):
-        return '{}: {}'.format(self.element, self.data)
-
-    def __eq__(self, other):
-        return self.element == other.element
-
-
-class RecordPattern(object):
-    record = []
-
-    def __init__(self, baseObject):
-        self.__class__ = type(baseObject.__class__.__name__,
-                              (self.__class__, baseObject.__class__),
-                              {})
-        self.__dict__ = baseObject.__dict__
-        self.__baseObject = baseObject
-
-    def handleMatch(self, m):
-        self.record.append(RecordItem(self.__baseObject.__class__.__name__, m.string))
-        return self.__baseObject.handleMatch(m)
-
-    def run(self, parent, blocks):
-        self.record.append(RecordItem(self.__baseObject.__class__.__name__, blocks[0]))
-        return self.__baseObject.run(parent, blocks)
-
-
-class ReplayPattern(object):
-    index = 0
-
-    def __init__(self, baseObject, record, error):
-        self.__class__ = type(baseObject.__class__.__name__,
-                              (self.__class__, baseObject.__class__),
-                              {})
-        self.__dict__ = baseObject.__dict__
-        self.__baseObject = baseObject
-        self.__record = record
-        self.__error = error
-
-    def __match_next(self, item):
-        if self.index >= len(self.__record):
-            self.__error.add_error(MarkdownExtraElementError(item.element, item.data))
+    def _check_content(self, content):
+        error_messages = []
+        urls = self._extract_urls(content)
+        for url in urls:
+            status_code = self._request_status_code(url)
+            if not self._is_valid(status_code):
+                error_messages.append('{} returned status code {}'.format(url, status_code))
+        if error_messages:
+            return UrlError(error_messages)
         else:
-            match = self.__record[self.index]
-            ReplayPattern.index = ReplayPattern.index + 1
-            if item != match:
-                self.__error.add_error(MarkdownCompareElementError(match.element, match.data, item.element, item.data))
-
-    def handleMatch(self, m):
-        if self.__match_next(RecordItem(self.__baseObject.__class__.__name__, m.string)):
-            self.__error.add_error(MarkdownElementError)
-        return self.__baseObject.handleMatch(m)
-
-    def run(self, parent, blocks):
-        if self.__match_next(RecordItem(self.__baseObject.__class__.__name__, blocks[0])):
-            self.__error.add_error(MarkdownElementError)
-        return self.__baseObject.run(parent, blocks)
+            return None
 
 
-class MarkdownCheck(CompareCheck):
-    def _make_recorder(self):
-        markdown = Markdown()
-        for inlinePattern in markdown.inlinePatterns:
-            markdown.inlinePatterns[inlinePattern] = RecordPattern(markdown.inlinePatterns[inlinePattern])
-        for blockProcessors in markdown.parser.blockprocessors:
-            markdown.parser.blockprocessors[blockProcessors] = RecordPattern(markdown.parser.blockprocessors[blockProcessors])
-        return markdown
+class HtmlUrlCheck(TxtUrlCheck):
 
-    def _make_replay(self, record, error):
-        markdown = Markdown()
-        for inlinePattern in markdown.inlinePatterns:
-            markdown.inlinePatterns[inlinePattern] = ReplayPattern(markdown.inlinePatterns[inlinePattern], record, error)
-        for blockProcessors in markdown.parser.blockprocessors:
-            markdown.parser.blockprocessors[blockProcessors] = ReplayPattern(markdown.parser.blockprocessors[blockProcessors], record, error)
-        return markdown
-
-    def compare(self, parser, reader, base_file_path, other_file_path):
-        RecordPattern.record = []
-        ReplayPattern.index = 0
-
-        base_content = reader.read(base_file_path)
-        other_content = reader.read(other_file_path)
-        error = CompareError(base_file_path, other_file_path)
-
-        recorder = self._make_recorder()
-        recorder.convert(base_content)
-
-        replay = self._make_replay(RecordPattern.record, error)
-        replay.convert(other_content)
-
-        return error
+    def _extract_urls(self, content):
+        soup = BeautifulSoup(content)
+        return set([url.get('href') or url.text for url in soup.find_all('a')])
 
 
-def check_links():
-    return LinkCheck()
+class ReplaceTextContentRenderer(hoep.Hoep):
+    placeholder_pattern = '[placeholder{}]'
+
+    def __init__(self, extensions=0, render_flags=0):
+        super().__init__(extensions, render_flags)
+        self.counter = 1
+        self.mapping = {}
+
+    def normal_text(self, text):
+        key = self.placeholder_pattern.format(self.counter)
+        self.counter += 1
+        self.mapping[key] = text
+        return key
 
 
-def check_structure():
-    return StructureCheck()
+class MarkdownComparator(ComparisonCheck):
+
+    def _diff(self, base, other, base_mapping, other_mapping):
+        diff = difflib.HtmlDiff(tabsize=4).make_table(base.splitlines(), other.splitlines())
+        diff_soup = BeautifulSoup(diff, 'html.parser')
+
+        changes = diff_soup.find_all('span', 'diff_chg')
+        for change in changes:
+            change.replace_with(change.get_text())
+
+        diff_rows = diff_soup.find_all('tr')
+        for row in diff_rows:
+            cells = row.find_all('td')
+            base_cell = str(cells[2])
+            other_cell = str(cells[5])
+            for k, v in base_mapping.items():
+                base_cell = base_cell.replace(k, v, 1)
+            for k, v in other_mapping.items():
+                other_cell = other_cell.replace(k, v, 1)
+            cells[2].replace_with(BeautifulSoup(base_cell))
+            cells[5].replace_with(BeautifulSoup(other_cell))
+        return str(diff_soup)
+
+    def _parse(self, content):
+        renderer = ReplaceTextContentRenderer()
+        content_html = renderer.render(content)
+        parsed_content = html2text(content_html).strip()
+        return parsed_content, renderer.mapping
+
+    def _compare(self, base, other):
+        base_parsed, base_mapping = self._parse(base)
+        other_parsed, other_mapping = self._parse(other)
+        diff = self._diff(base_parsed, other_parsed, base_mapping, other_mapping)
+
+        if base_parsed != other_parsed:
+            return MarkdownError(hoep.render(base, render_flags=hoep.HTML_SKIP_HTML), hoep.render(other, render_flags=hoep.HTML_SKIP_HTML), diff)
+        else:
+            return None
 
 
-def check_markdown():
-    return MarkdownCheck()
+def urls_txt():
+    return TxtUrlCheck()
+
+
+def urls_html():
+    return HtmlUrlCheck()
+
+
+def markdown():
+    return MarkdownComparator()

@@ -1,5 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<resources>
-  <string name="subject">test text in french</string>
-  <string name="footer"><![CDATA[test cdata in french]]></string>
-</resources>

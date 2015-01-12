@@ -1,0 +1,4 @@
+here we have http://www.google.fr and
+some
+
+more text with same link http://www.google.com

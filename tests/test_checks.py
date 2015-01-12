@@ -1,45 +1,96 @@
 from unittest import TestCase
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
-from validator.checks import LinkCheck, StructureCheck, MarkdownCheck
+from validator.checks import TxtUrlCheck, HtmlUrlCheck, MarkdownComparator
 
 
-class TestLinkCheck(TestCase):
+class TestTxtUrlChecker(TestCase):
+
     def setUp(self):
-        self.check = LinkCheck()
-        self.parser = MagicMock()
-        self.reader = MagicMock()
+        self.check = TxtUrlCheck()
 
     @patch('requests.get')
-    def test_links_happy_path(self, mock_get):
+    def test_happy_path(self, mock_get):
+        content = 'aaa http://www.google.com aaa'
         mock_get.return_value.status_code = 200
-        self.parser.parse.return_value = '<a href="www.test.com">test</p>'
-        errors = self.check.validate(self.parser, self.reader, 'dummy_path')
-        self.assertFalse(errors)
+
+        errors = self.check._check_content(content)
+
+        self.assertIsNone(errors)
+
+    @patch('requests.get')
+    def test_not_found(self, mock_get):
+        content = 'aaa http://www.google.com aaa'
+        mock_get.return_value.status_code = 404
+
+        errors = self.check._check_content(content)
+
+        self.assertIsNotNone(errors)
+
+    @patch('requests.get')
+    def test_retry_for_server_error(self, mock_get):
+        content = 'aaa http://www.google.com aaa'
+        mock_get.return_value.status_code = 500
+
+        errors = self.check._check_content(content)
+
+        self.assertEqual(3, mock_get.call_count)
+
+    @patch('requests.get')
+    def test_make_only_one_request_per_unique_url(self, mock_get):
+        content = 'aaa http://www.google.com aaa http://www.google.com aaa'
+        mock_get.return_value.status_code = 200
+
+        errors = self.check._check_content(content)
+
+        self.assertEqual(1, mock_get.call_count)
 
 
-class TestStructureCheck(TestCase):
+class TestHtmlUrlChecker(TestCase):
+
     def setUp(self):
-        self.check = StructureCheck()
-        self.parser = MagicMock()
-        self.reader = MagicMock()
+        self.check = HtmlUrlCheck()
 
-    def test_structure_happy_path(self):
-        self.parser.parse.return_value = '<a>link</a><p>hello</p>'
-        errors = self.check.compare(self.parser, self.reader, 'dummy_path', 'dummy_path')
-        self.assertFalse(errors)
+    @patch('requests.get')
+    def test_happy_path(self, mock_get):
+        content = '<a href="http://www.google.com">link</a>'
+        mock_get.return_value.status_code = 200
 
-    def test_structure_different_html(self):
-        self.parser.parse.side_effect = ['<a>link</a><p>hello</p>', '<a>link</a><p>hello</p><p>extra</p>']
-        errors = self.check.compare(self.parser, self.reader, 'dummy_path', 'dummy_path')
-        self.assertTrue(errors)
+        errors = self.check._check_content(content)
 
-class TestMarkdownCheck(TestCase):
-    def setUp(self):
-        self.check = MarkdownCheck()
-        self.parser = MagicMock()
-        self.reader = MagicMock()
+        self.assertIsNone(errors)
 
-    def test_markdown_happy_path(self):
-        self.reader.read.return_value = '[link](http://www.google.com) hello \n\n world'
-        errors = self.check.compare(self.parser, self.reader, 'dummy_path', 'dummy_path')
+    @patch('requests.get')
+    def test_url_in_text_no_href(self, mock_get):
+        content = '<a>http://www.google.com</a>'
+        mock_get.return_value.status_code = 200
+
+        errors = self.check._check_content(content)
+
+        self.assertIsNone(errors)
+
+
+def read(path):
+    with open(path) as fp:
+        return fp.read()
+
+
+#TODO those IsNotNone tests are stupid, we should return something that is testable and convert it to error messages
+class TestMarkdownComparator(TestCase):
+    def _test_markdown(self, path1, path2):
+        comparator = MarkdownComparator()
+        md1= read(path1)
+        md2 = read(path2)
+        return comparator._compare(md1, md2)
+
+    def test_markdown_same(self):
+        error = self._test_markdown('tests/fixtures/lang/en/test1.md', 'tests/fixtures/lang/de/test1.md')
+        self.assertIsNone(error)
+
+    def test_markdown_different(self):
+        error = self._test_markdown('tests/fixtures/lang/en/test2.md', 'tests/fixtures/lang/de/test2.md')
+        self.assertIsNotNone(error)
+
+    def test_diff(self):
+        comparator = MarkdownComparator()
+        comparator._compare('# Congratulations!!!', '# ¡Felicitaciones!')

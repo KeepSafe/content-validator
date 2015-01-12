@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools" template="basic.html" style="basic.css">
+    <string name="subject">A big “thank you” gift from KeepSafe</string>
+    <string name="content"><![CDATA[# Congratulations!!!
+
+{{invited_name}} accepted your invite to KeepSafe. We really appreciate your recommendation, because it’s you, your friends and their friends who make our app successful.  
+
+As a thank you, we have added {{num_month_added}} months of KeepSafe Premium to your account.
+]]></string>
+<string name="footer"><![CDATA[Good bye and keep safe,  
+The KeepSafe Team
+]]></string>
+</resources>
