@@ -2,6 +2,7 @@ import requests
 import re
 import difflib
 import hoep
+import logging
 from bs4 import BeautifulSoup, element
 from collections import defaultdict
 from html2text import html2text
@@ -57,7 +58,7 @@ class TxtUrlCheck(ContentCheck):
         try:
             return requests.get(url).status_code
         except Exception:
-            logging.exception('Error making request to %s', url)
+            logging.error('Error making request to %s', url)
             return 500
 
     def _retry_request(self, url, status):
@@ -78,17 +79,17 @@ class TxtUrlCheck(ContentCheck):
         return 200 <= status_code < 300
 
     def _extract_urls(self, content):
-        return set(match.group().strip(')').strip('.') for match in re.finditer(self.url_pattern, content))
+        return set(match.group().strip(').') for match in re.finditer(self.url_pattern, content))
 
     def _check_content(self, content):
-        error_messages = []
+        error = UrlError()
         urls = self._extract_urls(content)
         for url in urls:
             status_code = self._request_status_code(url)
             if not self._is_valid(status_code):
-                error_messages.append('{} returned status code {}'.format(url, status_code))
-        if error_messages:
-            return UrlError(error_messages)
+                error.add_url(url, status_code)
+        if error:
+            return error
         else:
             return None
 

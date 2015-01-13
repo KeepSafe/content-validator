@@ -34,6 +34,16 @@ class XmlParser(object):
         return '\n\n'.join(text_elements)
 
 
+class CsvParser(object):
+
+    def __init__(self, **kwargs):
+        pass
+
+    def parse(self, content):
+        return '\n'.join(content.split(','))
+
+
+
 class ChainParser(object):
 
     def __init__(self, **kwargs):
@@ -48,7 +58,8 @@ class ChainParser(object):
 parsers = {
     Filetype.txt: TxtParser,
     Filetype.md: MarkdownParser,
-    Filetype.xml: XmlParser
+    Filetype.xml: XmlParser,
+    Filetype.csv: CsvParser
 }
 
 

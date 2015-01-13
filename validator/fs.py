@@ -9,6 +9,7 @@ class Filetype(Enum):
     txt = 0
     md = 1
     xml = 2
+    csv = 3
 
 
 def read_content(path):

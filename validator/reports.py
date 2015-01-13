@@ -16,6 +16,9 @@ class UrlError(object):
     def add_url(self, url, status_code):
         self.urls[url] = status_code
 
+    def has_errors(self):
+        return bool(self.urls)
+
 class ComparisonError(object):
 
     def __init__(self, base_path, other_path, error):
@@ -92,7 +95,7 @@ class HtmlReporter(object):
             report_soup = BeautifulSoup(self.report_template)
             if isinstance(error, ContentError):
                 url_error = error.error
-                messages = ['<span>{} returned with code {}</span>'.format(url, code) for url, code in url_error.urls]
+                messages = ['<span>{} returned with code {}</span>'.format(url, code) for url, code in url_error.urls.items()]
                 self._add_content(report_soup, 'urls', '\n'.join(messages))
             if isinstance(error, ComparisonError):
                 md_error = error.error
@@ -102,3 +105,16 @@ class HtmlReporter(object):
                 report_soup = self._add_content(report_soup, 'right_html', BeautifulSoup(md_error.other).body)
                 report_soup = self._add_content(report_soup, 'md_diff', BeautifulSoup(md_error.diff).body)
             save_report(self.output_directory, error.other_path, report_soup.prettify())
+
+
+class ConsoleReporter(object):
+    def report(self, errors):
+        for path, error in errors.items():
+            if isinstance(error, ContentError):
+                url_error = error.error
+                print('File {} has errors:'.format(str(path)))
+                for url, code in url_error.urls.items():
+                    print('{} returned with code {}'.format(url, code))
+                print()
+            if isinstance(error, ComparisonError):
+                print('Files are different:\n{}\n{}\n\n'.format(str(error.base_path), str(error.other_path)))
