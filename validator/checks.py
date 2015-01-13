@@ -4,7 +4,7 @@ import difflib
 import hoep
 import logging
 from bs4 import BeautifulSoup, element
-from collections import defaultdict
+from urllib.parse import urlparse, urljoin
 from html2text import html2text
 
 from .reports import ContentError, UrlError, ComparisonError, MarkdownError
@@ -88,7 +88,7 @@ class TxtUrlCheck(ContentCheck):
             status_code = self._request_status_code(url)
             if not self._is_valid(status_code):
                 error.add_url(url, status_code)
-        if error:
+        if error.has_errors():
             return error
         else:
             return None
@@ -96,9 +96,25 @@ class TxtUrlCheck(ContentCheck):
 
 class HtmlUrlCheck(TxtUrlCheck):
 
+    def __init__(self, root_url=''):
+        self.root_url = root_url
+
     def _extract_urls(self, content):
+        result = []
         soup = BeautifulSoup(content)
-        return set([url.get('href') or url.text for url in soup.find_all('a')])
+        urls = set([a.get('href') or a.text for a in soup.find_all('a')])
+        for url in urls:
+            url_parsed = urlparse(url)
+            if url_parsed.geturl().startswith('/'):
+                if self.root_url:
+                    result.append(urljoin(self.root_url, url_parsed.geturl()))
+            elif url_parsed.scheme in ['http', 'https']:
+                result.append(url_parsed.geturl())
+            elif not url_parsed.scheme:
+                result.append('http://' + url_parsed.geturl())
+            else:
+                logging.error('{} not tested'.format(url_parsed.geturl()))
+        return result
 
 
 class ReplaceTextContentRenderer(hoep.Hoep):
@@ -170,8 +186,8 @@ def urls_txt():
     return TxtUrlCheck()
 
 
-def urls_html():
-    return HtmlUrlCheck()
+def urls_html(root_url=''):
+    return HtmlUrlCheck(root_url)
 
 
 def markdown():

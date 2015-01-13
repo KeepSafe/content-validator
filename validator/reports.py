@@ -113,6 +113,7 @@ class ConsoleReporter(object):
             if isinstance(error, ContentError):
                 url_error = error.error
                 print('File {} has errors:'.format(str(path)))
+                print(url_error.urls)
                 for url, code in url_error.urls.items():
                     print('{} returned with code {}'.format(url, code))
                 print()
