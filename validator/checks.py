@@ -78,8 +78,12 @@ class TxtUrlCheck(ContentCheck):
     def _is_valid(self, status_code):
         return 200 <= status_code < 300
 
+    def _remove_param_links(self, url):
+        return not bool(re.match(r'\{\{.+\}\}', url))
+
     def _extract_urls(self, content):
-        return set(match.group().strip(').') for match in re.finditer(self.url_pattern, content))
+        result = set(match.group().strip(').') for match in re.finditer(self.url_pattern, content))
+        return filter(self._remove_param_links, result)
 
     def _check_content(self, content):
         error = UrlError()
@@ -114,7 +118,7 @@ class HtmlUrlCheck(TxtUrlCheck):
                 result.append('http://' + url_parsed.geturl())
             else:
                 logging.error('{} not tested'.format(url_parsed.geturl()))
-        return result
+        return filter(self._remove_param_links, result)
 
 
 class ReplaceTextContentRenderer(hoep.Hoep):

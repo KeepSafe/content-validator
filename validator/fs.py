@@ -13,8 +13,11 @@ class Filetype(Enum):
 
 
 def read_content(path):
-    with path.open() as fp:
-        return fp.read()
+    if path.exists():
+        with path.open() as fp:
+            return fp.read()
+    else:
+        return ''
 
 
 def save_report(directory, source_path, report):

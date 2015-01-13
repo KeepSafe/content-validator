@@ -104,7 +104,7 @@ class HtmlReporter(object):
                 report_soup = self._add_content(report_soup, 'left_html', BeautifulSoup(md_error.base).body)
                 report_soup = self._add_content(report_soup, 'right_html', BeautifulSoup(md_error.other).body)
                 report_soup = self._add_content(report_soup, 'md_diff', BeautifulSoup(md_error.diff).body)
-            save_report(self.output_directory, error.other_path, report_soup.prettify())
+                save_report(self.output_directory, error.other_path, report_soup.prettify())
 
 
 class ConsoleReporter(object):
@@ -113,7 +113,6 @@ class ConsoleReporter(object):
             if isinstance(error, ContentError):
                 url_error = error.error
                 print('File {} has errors:'.format(str(path)))
-                print(url_error.urls)
                 for url, code in url_error.urls.items():
                     print('{} returned with code {}'.format(url, code))
                 print()

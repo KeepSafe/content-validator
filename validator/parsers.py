@@ -29,6 +29,8 @@ class XmlParser(object):
         self.query = kwargs.get('query', '*')
 
     def parse(self, content):
+        if not content:
+            return ''
         elements = ET.fromstring(content).findall(self.query)
         text_elements = [element.text for element in elements]
         return '\n\n'.join(text_elements)
@@ -69,5 +71,4 @@ def create_parser(filetype, **kwargs):
 
 def chain_parsers(parser_types, **kwargs):
     parsers = [create_parser(parser_type, **kwargs) for parser_type in parser_types]
-    print(parsers)
     return ChainParser(parsers=parsers)
