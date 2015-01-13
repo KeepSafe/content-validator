@@ -101,16 +101,25 @@ class HtmlUrlCheck(TxtUrlCheck):
 
 
 class ReplaceTextContentRenderer(hoep.Hoep):
-    placeholder_pattern = '[placeholder{}]'
+    _placeholder_pattern = '[placeholder{}]'
 
     def __init__(self, extensions=0, render_flags=0):
-        super().__init__(extensions, render_flags)
-        self.counter = 1
+        super(ReplaceTextContentRenderer, self).__init__(extensions, render_flags)
+        self._counter = 1
+        self._links = 1
         self.mapping = {}
 
+    # def _link(self, link, title, content):
+    #     key = self.link_pattern.format(self.links)
+    #     self.links += 1
+    #     self.mapping[key] = content
+    #     return key
+
     def normal_text(self, text):
-        key = self.placeholder_pattern.format(self.counter)
-        self.counter += 1
+        if not text.strip():
+            return text
+        key = self._placeholder_pattern.format(self._counter)
+        self._counter += 1
         self.mapping[key] = text
         return key
 
@@ -142,6 +151,7 @@ class MarkdownComparator(ComparisonCheck):
         renderer = ReplaceTextContentRenderer()
         content_html = renderer.render(content)
         parsed_content = html2text(content_html).strip()
+        parsed_content = re.sub(r'\([^\)]*\)', '()', parsed_content)
         return parsed_content, renderer.mapping
 
     def _compare(self, base, other):

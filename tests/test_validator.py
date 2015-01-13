@@ -62,6 +62,11 @@ class TestExamples(TestCase):
         return v.validate()
 
     def test_share_earned_free(self):
-        errors = self._test_markdown_from_xml('tests/fixtures/examples/share_earned_free.{lang}.xml')
+        errors = self._test_markdown_from_xml('tests/fixtures/examples/user_invite.{lang}.xml')
+
+        self.assertEqual({}, errors)
+
+    def test_user_invite(self):
+        errors = self._test_markdown_from_xml('tests/fixtures/examples/user_invite.{lang}.xml')
 
         self.assertEqual({}, errors)

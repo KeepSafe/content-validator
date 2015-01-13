@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools" template="basic_template.html" style="basic_template.css">
+    <!-- Email that gets send when user invites another user -->
+    <string name="subject">Рекомендация от {{invite_from_name}}</string>
+    <string name="content"><![CDATA[Здравствуйте, {{invite_to_name}},
+
+{{invite_from_name}}({{invite_from_email}}) рекомендует вам попробовать KeepSafe. KeepSafe - это личная фотогалерея, которая позволит вам хранить самые персональные и важные фото и видео, надёжно защитив их PIN-кодом.
+
+Скачайте приложение абсолютно бесплатно
+
+[Скачать для iPhone](https://itunes.apple.com/app/id510873505) | [Скачать для Android](https://play.google.com/store/apps/details?id=com.kii.safe)
+
+Пользуйтесь с удовольствием!  
+KeepSafe
+]]></string>
+</resources>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools" template="basic_template.html" style="basic_template.css">
+    <!-- Email that gets send when user invites another user -->
+    <string name="subject">Recommendation from {{invite_from_name}}</string>
+    <string name="content"><![CDATA[Hello {{invite_to_name}},
+
+{{invite_from_name}}({{invite_from_email}}) is recommending KeepSafe to you. KeepSafe is a private photo gallery with a PIN pad that helps you to store and protect your personal and important photos and videos.
+
+Download it for free 
+
+[Download for iPhone](https://itunes.apple.com/app/id510873505) | [Download for Android](https://play.google.com/store/apps/details?id=com.kii.safe)
+
+Enjoy  
+KeepSafe
+]]></string>
+</resources>
