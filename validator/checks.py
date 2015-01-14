@@ -79,7 +79,7 @@ class TxtUrlCheck(ContentCheck):
         return 200 <= status_code < 300
 
     def _remove_param_links(self, url):
-        return not bool(re.match(r'\{\{.+\}\}', url))
+        return not bool(re.search(r'\{\{\w+\}\}', url))
 
     def _extract_urls(self, content):
         result = set(match.group().strip(').') for match in re.finditer(self.url_pattern, content))
