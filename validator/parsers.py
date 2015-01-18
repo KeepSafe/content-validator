@@ -1,4 +1,4 @@
-import hoep
+import markdown
 import xml.etree.ElementTree as ET
 
 from .fs import Filetype
@@ -20,7 +20,7 @@ class MarkdownParser(object):
         pass
 
     def parse(self, content):
-        return hoep.render(content)
+        return markdown.markdown(content)
 
 
 class XmlParser(object):

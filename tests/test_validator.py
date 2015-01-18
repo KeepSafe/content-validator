@@ -29,6 +29,16 @@ class TestUrls(TestCase):
         errors = self._test_plain_text()
         self.assertTrue(Path('tests/fixtures/flat/test.en.txt') in errors)
 
+    @patch('requests.get')
+    def test_md_with_params(self, mock_get):
+        files = validator.fs.files('tests/fixtures/flat/url_with_params.md')
+        urls = validator.checks.urls_html()
+        parser = validator.parsers.create_parser(validator.fs.Filetype.md)
+
+        validator.Validator(checks=[urls], files=files, parser=parser).validate()
+
+        self.assertFalse(mock_get.call_args)
+
 
 class TestMarkdown(TestCase):
 
@@ -49,24 +59,3 @@ class TestMarkdown(TestCase):
         errors = v.validate()
 
         self.assertNotEqual({}, errors)
-
-
-class TestExamples(TestCase):
-
-    def _test_markdown_from_xml(self, pattern):
-        files = validator.fs.files(pattern, lang='en')
-        comparator = validator.checks.markdown()
-        parser = validator.parsers.create_parser(validator.fs.Filetype.xml, query='.//string')
-        reporter = validator.reports.HtmlReporter()
-        v = validator.Validator(checks=[comparator], files=files, parser=parser, reporter=reporter)
-        return v.validate()
-
-    def test_share_earned_free(self):
-        errors = self._test_markdown_from_xml('tests/fixtures/examples/user_invite.{lang}.xml')
-
-        self.assertEqual({}, errors)
-
-    def test_user_invite(self):
-        errors = self._test_markdown_from_xml('tests/fixtures/examples/user_invite.{lang}.xml')
-
-        self.assertEqual({}, errors)
