@@ -78,12 +78,12 @@ class TxtUrlCheck(ContentCheck):
     def _is_valid(self, status_code):
         return 200 <= status_code < 300
 
-    def _remove_param_links(self, url):
+    def _without_params(self, url):
         return not bool(re.search(r'\{\{\w+\}\}', url))
 
     def _extract_urls(self, content):
         result = set(match.group().strip(').') for match in re.finditer(self.url_pattern, content))
-        return filter(self._remove_param_links, result)
+        return filter(self._without_params, result)
 
     def _check_content(self, content):
         error = UrlError()
@@ -103,22 +103,35 @@ class HtmlUrlCheck(TxtUrlCheck):
     def __init__(self, root_url=''):
         self.root_url = root_url
 
+    def _extract_from_anchors(self, soup):
+        return set([a.get('href') or a.text for a in soup.find_all('a')])
+
+    def _extract_from_img(self, soup):
+        return set([img.get('src') for img in soup.find_all('img')])
+
+    def _fix_url(self, url):
+        result = ''
+        url_parsed = urlparse(url)
+        if url_parsed.geturl().startswith('/'):
+            if self.root_url:
+                result = urljoin(self.root_url, url_parsed.geturl())
+        elif url_parsed.scheme in ['http', 'https']:
+            result = url_parsed.geturl()
+        elif not url_parsed.scheme:
+            result = 'http://' + url_parsed.geturl()
+        else:
+            logging.error('{} not tested'.format(url_parsed.geturl()))
+        return result
+
     def _extract_urls(self, content):
         result = []
         soup = BeautifulSoup(content)
-        urls = set([a.get('href') or a.text for a in soup.find_all('a')])
+        urls = self._extract_from_anchors(soup) | self._extract_from_img(soup)
         for url in urls:
-            url_parsed = urlparse(url)
-            if url_parsed.geturl().startswith('/'):
-                if self.root_url:
-                    result.append(urljoin(self.root_url, url_parsed.geturl()))
-            elif url_parsed.scheme in ['http', 'https']:
-                result.append(url_parsed.geturl())
-            elif not url_parsed.scheme:
-                result.append('http://' + url_parsed.geturl())
-            else:
-                logging.error('{} not tested'.format(url_parsed.geturl()))
-        return filter(self._remove_param_links, result)
+            fixed_url = self._fix_url(url)
+            if fixed_url and self._without_params(fixed_url):
+                result.append(fixed_url)
+        return result
 
 
 class ReplaceTextContentRenderer(hoep.Hoep):

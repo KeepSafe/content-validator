@@ -80,11 +80,20 @@ class TestHtmlUrlChecker(TestCase):
         self.assertIsNone(errors)
 
     @patch('requests.get')
+    def test_image(self, mock_get):
+        content = '<img src="http://www.google.com">'
+        mock_get.return_value.status_code = 200
+
+        self.check._check_content(content)
+
+        self.assertTrue(mock_get.called)
+
+    @patch('requests.get')
     def test_skip_request_parameterized_urls(self, mock_get):
         content = '<a href="http://{{url}}">link</a>'
         mock_get.return_value.status_code = 200
 
-        errors = self.check._check_content(content)
+        self.check._check_content(content)
 
         self.assertFalse(mock_get.called)
 
