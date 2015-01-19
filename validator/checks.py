@@ -119,7 +119,9 @@ class HtmlUrlCheck(TxtUrlCheck):
             if re.match(self.url_pattern, url_parsed.geturl()):
                 result = url_parsed.geturl()
         elif not url_parsed.scheme:
-            result = 'http://' + url_parsed.geturl()
+            full_url = 'http://' + url_parsed.geturl()
+            if re.match(self.url_pattern, full_url):
+                result = url_parsed.geturl()
         else:
             logging.error('{} not tested'.format(url_parsed.geturl()))
         return result

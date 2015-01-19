@@ -98,7 +98,7 @@ class TestHtmlUrlChecker(TestCase):
 
     @patch('requests.get')
     def test_skip_request_parameterized_urls(self, mock_get):
-        content = '<a href="http://{{url}}">link</a>'
+        content = '<a href="{{url}}">link</a>'
         mock_get.return_value.status_code = 200
 
         self.check._check_content(content)
@@ -107,7 +107,7 @@ class TestHtmlUrlChecker(TestCase):
 
     @patch('requests.get')
     def test_skip_empty_urls(self, mock_get):
-        content = '<a href="http://">link</a>'
+        content = '<a href=""></a>'
         mock_get.return_value.status_code = 200
 
         self.check._check_content(content)
