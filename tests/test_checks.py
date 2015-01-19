@@ -54,6 +54,14 @@ class TestTxtUrlChecker(TestCase):
 
         self.assertFalse(mock_get.called)
 
+    @patch('requests.get')
+    def test_skip_empty_urls(self, mock_get):
+        content = 'aaa http:// aaa'
+        mock_get.return_value.status_code = 200
+
+        errors = self.check._check_content(content)
+
+        self.assertFalse(mock_get.called)
 
 
 class TestHtmlUrlChecker(TestCase):
@@ -91,6 +99,15 @@ class TestHtmlUrlChecker(TestCase):
     @patch('requests.get')
     def test_skip_request_parameterized_urls(self, mock_get):
         content = '<a href="http://{{url}}">link</a>'
+        mock_get.return_value.status_code = 200
+
+        self.check._check_content(content)
+
+        self.assertFalse(mock_get.called)
+
+    @patch('requests.get')
+    def test_skip_empty_urls(self, mock_get):
+        content = '<a href="http://">link</a>'
         mock_get.return_value.status_code = 200
 
         self.check._check_content(content)

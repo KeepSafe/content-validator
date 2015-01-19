@@ -116,7 +116,8 @@ class HtmlUrlCheck(TxtUrlCheck):
             if self.root_url:
                 result = urljoin(self.root_url, url_parsed.geturl())
         elif url_parsed.scheme in ['http', 'https']:
-            result = url_parsed.geturl()
+            if re.match(self.url_pattern, url_parsed.geturl()):
+                result = url_parsed.geturl()
         elif not url_parsed.scheme:
             result = 'http://' + url_parsed.geturl()
         else:
