@@ -6,6 +6,7 @@ import logging
 from bs4 import BeautifulSoup, element
 from urllib.parse import urlparse, urljoin
 from html2text import html2text
+from email.utils import parseaddr
 
 from .reports import ContentError, UrlError, ComparisonError, MarkdownError
 from .fs import Filetype, read_content
@@ -103,6 +104,12 @@ class HtmlUrlCheck(TxtUrlCheck):
     def __init__(self, root_url=''):
         self.root_url = root_url
 
+    def _validate_email(self, email):
+    	if len(email) > 7:
+    		if re.match('^.+\\@(\\[?)[a-zA-Z0-9\\-\\.]+\\.([a-zA-Z]{2,3}|[0-9]{1,3})(\\]?)$', email):
+    			return True
+    	return False
+
     def _extract_from_anchors(self, soup):
         return set([a.get('href') or a.text for a in soup.find_all('a')])
 
@@ -119,9 +126,10 @@ class HtmlUrlCheck(TxtUrlCheck):
             if re.match(self.url_pattern, url_parsed.geturl()):
                 result = url_parsed.geturl()
         elif not url_parsed.scheme:
-            full_url = 'http://' + url_parsed.geturl()
-            if re.match(self.url_pattern, full_url):
-                result = url_parsed.geturl()
+            if not self._validate_email(url_parsed.geturl()):
+                full_url = 'http://' + url_parsed.geturl()
+                if re.match(self.url_pattern, full_url):
+                    result = full_url
         else:
             logging.error('{} not tested'.format(url_parsed.geturl()))
         return result

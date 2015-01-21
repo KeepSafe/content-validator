@@ -63,6 +63,15 @@ class TestTxtUrlChecker(TestCase):
 
         self.assertFalse(mock_get.called)
 
+    @patch('requests.get')
+    def test_skip_email(self, mock_get):
+        content = 'aaa support@getkeepsafe.com aaa'
+        mock_get.return_value.status_code = 200
+
+        errors = self.check._check_content(content)
+
+        self.assertFalse(mock_get.called)
+
 
 class TestHtmlUrlChecker(TestCase):
 
@@ -88,6 +97,16 @@ class TestHtmlUrlChecker(TestCase):
         self.assertIsNone(errors)
 
     @patch('requests.get')
+    def test_add_http_if_missing(self, mock_get):
+        content = '<a href="www.google.com">link</a>'
+        mock_get.return_value.status_code = 200
+
+        errors = self.check._check_content(content)
+
+        self.assertTrue(mock_get.called)
+        self.assertIsNone(errors)
+
+    @patch('requests.get')
     def test_image(self, mock_get):
         content = '<img src="http://www.google.com">'
         mock_get.return_value.status_code = 200
@@ -108,6 +127,15 @@ class TestHtmlUrlChecker(TestCase):
     @patch('requests.get')
     def test_skip_empty_urls(self, mock_get):
         content = '<a href=""></a>'
+        mock_get.return_value.status_code = 200
+
+        self.check._check_content(content)
+
+        self.assertFalse(mock_get.called)
+
+    @patch('requests.get')
+    def test_skip_email(self, mock_get):
+        content = '<a href="support@getkeepsafe.com"></a>'
         mock_get.return_value.status_code = 200
 
         self.check._check_content(content)
