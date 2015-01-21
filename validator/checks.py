@@ -101,8 +101,9 @@ class TxtUrlCheck(ContentCheck):
 
 class HtmlUrlCheck(TxtUrlCheck):
 
-    def __init__(self, root_url=''):
+    def __init__(self, root_url='', skip_images=False):
         self.root_url = root_url
+        self.skip_images = skip_images
 
     def _validate_email(self, email):
     	if len(email) > 7:
@@ -114,6 +115,8 @@ class HtmlUrlCheck(TxtUrlCheck):
         return set([a.get('href') or a.text for a in soup.find_all('a')])
 
     def _extract_from_img(self, soup):
+        if self.skip_images:
+            return set()
         return set([img.get('src') for img in soup.find_all('img')])
 
     def _fix_url(self, url):
@@ -214,8 +217,8 @@ def urls_txt():
     return TxtUrlCheck()
 
 
-def urls_html(root_url=''):
-    return HtmlUrlCheck(root_url)
+def urls_html(root_url='', skip_images=False):
+    return HtmlUrlCheck(root_url, skip_images)
 
 
 def markdown():

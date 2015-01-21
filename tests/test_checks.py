@@ -142,6 +142,15 @@ class TestHtmlUrlChecker(TestCase):
 
         self.assertFalse(mock_get.called)
 
+    @patch('requests.get')
+    def test_skip_images(self, mock_get):
+        check = HtmlUrlCheck(skip_images=True)
+        content = '<img alt="image" src="http://no-image" />'
+        mock_get.return_value.status_code = 200
+
+        check._check_content(content)
+
+        self.assertFalse(mock_get.called)
 
 def read(path):
     with open(path) as fp:
