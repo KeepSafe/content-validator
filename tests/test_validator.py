@@ -1,6 +1,9 @@
 from unittest import TestCase
 from unittest.mock import patch, MagicMock
 from pathlib import Path
+import tempfile
+import os
+import shutil
 from . import AsyncTestCase
 
 import validator
@@ -64,3 +67,21 @@ class TestMarkdown(TestCase):
         errors = v.validate()
 
         self.assertNotEqual({}, errors)
+
+class TestReporter(TestCase):
+
+    def setUp(self):
+        self.output_dir = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.output_dir)
+
+    def test_report_saved(self):
+        files = validator.fs.files('tests/fixtures/lang/{lang}/test2.md', lang='en')
+        comparator = validator.checks.markdown()
+        reporter = validator.reports.HtmlReporter(output_directory=self.output_dir)
+        v = validator.Validator(checks=[comparator], files=files, reporter=reporter)
+
+        v.validate()
+
+        self.assertNotEqual([], os.listdir(self.output_dir))
