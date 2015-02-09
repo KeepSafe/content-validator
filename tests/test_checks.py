@@ -1,30 +1,34 @@
 from unittest import TestCase
 from unittest.mock import patch, MagicMock
+from . import AsyncTestCase
 
 from validator.checks import TxtUrlCheck, HtmlUrlCheck, MarkdownComparator
 
 
-class TestTxtUrlChecker(TestCase):
+class TestTxtUrlChecker(AsyncTestCase):
 
     def setUp(self):
+        super().setUp()
         self.check = TxtUrlCheck()
         self.parser = MagicMock()
 
     def _check(self, mock_get, content, status_code):
         self.parser.parse.return_value = content
-        mock_get.return_value.status_code = status_code
+        res = MagicMock()
+        res.status = status_code
+        mock_get.return_value = self.make_fut(res)
 
         return self.check.check(['dummy_path'], self.parser)
 
     @patch('validator.checks.read_content')
-    @patch('requests.get')
+    @patch('aiohttp.request')
     def test_happy_path(self, mock_get, mock_read):
         errors = self._check(mock_get, 'aaa http://www.google.com aaa', 200)
 
         self.assertEqual({}, errors)
 
     @patch('validator.checks.read_content')
-    @patch('requests.get')
+    @patch('aiohttp.request')
     def test_not_found(self, mock_get, mock_read):
         errors = self._check(mock_get, 'aaa http://www.google.com aaa', 404)
 
@@ -32,106 +36,109 @@ class TestTxtUrlChecker(TestCase):
         self.assertEqual({'http://www.google.com': 404}, errors['dummy_path'].urls)
 
     @patch('validator.checks.read_content')
-    @patch('requests.get')
+    @patch('aiohttp.request')
     def test_retry_for_server_error(self, mock_get, mock_read):
         errors = self._check(mock_get, 'aaa http://www.google.com aaa', 500)
 
         self.assertEqual(3, mock_get.call_count)
 
     @patch('validator.checks.read_content')
-    @patch('requests.get')
+    @patch('aiohttp.request')
     def test_make_only_one_request_per_unique_url(self, mock_get, mock_read):
         errors = self._check(mock_get, 'aaa http://www.google.com aaa http://www.google.com aaa', 200)
 
         self.assertEqual(1, mock_get.call_count)
 
     @patch('validator.checks.read_content')
-    @patch('requests.get')
+    @patch('aiohttp.request')
     def test_skip_request_parameterized_urls(self, mock_get, mock_read):
         errors = self._check(mock_get, 'aaa http://{{url}} aaa', 200)
 
         self.assertFalse(mock_get.called)
 
     @patch('validator.checks.read_content')
-    @patch('requests.get')
+    @patch('aiohttp.request')
     def test_skip_empty_urls(self, mock_get, mock_read):
         errors = self._check(mock_get, 'aaa http:// aaa', 200)
 
         self.assertFalse(mock_get.called)
 
     @patch('validator.checks.read_content')
-    @patch('requests.get')
+    @patch('aiohttp.request')
     def test_skip_email(self, mock_get, mock_read):
         errors = self._check(mock_get, 'aaa support@getkeepsafe.com aaa', 200)
 
         self.assertFalse(mock_get.called)
 
 
-class TestHtmlUrlChecker(TestCase):
+class TestHtmlUrlChecker(AsyncTestCase):
 
     def setUp(self):
+        super().setUp()
         self.check = HtmlUrlCheck()
         self.parser = MagicMock()
 
     def _check(self, mock_get, content, status_code, check=None):
         check = check or self.check
         self.parser.parse.return_value = content
-        mock_get.return_value.status_code = status_code
+        res = MagicMock()
+        res.status = status_code
+        mock_get.return_value = self.make_fut(res)
 
         return check.check(['dummy_path'], self.parser)
 
     @patch('validator.checks.read_content')
-    @patch('requests.get')
+    @patch('aiohttp.request')
     def test_happy_path(self, mock_get, mock_read):
         errors = self._check(mock_get, '<a href="http://www.google.com">link</a>', 200)
 
-        mock_get.assert_called_with('http://www.google.com')
+        mock_get.assert_called_with('get', 'http://www.google.com')
         self.assertEqual({}, errors)
 
     @patch('validator.checks.read_content')
-    @patch('requests.get')
+    @patch('aiohttp.request')
     def test_url_in_text_no_href(self, mock_get, mock_read):
         errors = self._check(mock_get, '<a>http://www.google.com</a>', 200)
 
         self.assertEqual({}, errors)
 
     @patch('validator.checks.read_content')
-    @patch('requests.get')
+    @patch('aiohttp.request')
     def test_add_http_if_missing(self, mock_get, mock_read):
         errors = self._check(mock_get, '<a href="www.google.com">link</a>', 200)
 
         self.assertEqual({}, errors)
 
     @patch('validator.checks.read_content')
-    @patch('requests.get')
+    @patch('aiohttp.request')
     def test_image(self, mock_get, mock_read):
         errors = self._check(mock_get, '<img src="http://www.google.com">', 200)
 
         self.assertTrue(mock_get.called)
 
     @patch('validator.checks.read_content')
-    @patch('requests.get')
+    @patch('aiohttp.request')
     def test_skip_request_parameterized_urls(self, mock_get, mock_read):
         errors = self._check(mock_get, '<a href="{{url}}">link</a>', 200)
 
         self.assertFalse(mock_get.called)
 
     @patch('validator.checks.read_content')
-    @patch('requests.get')
+    @patch('aiohttp.request')
     def test_skip_empty_urls(self, mock_get, mock_read):
         errors = self._check(mock_get, '<a href=""></a>', 200)
 
         self.assertFalse(mock_get.called)
 
     @patch('validator.checks.read_content')
-    @patch('requests.get')
+    @patch('aiohttp.request')
     def test_skip_email(self, mock_get, mock_read):
         errors = self._check(mock_get, '<a href="support@getkeepsafe.com"></a>', 200)
 
         self.assertFalse(mock_get.called)
 
     @patch('validator.checks.read_content')
-    @patch('requests.get')
+    @patch('aiohttp.request')
     def test_skip_images(self, mock_get, mock_read):
         check = HtmlUrlCheck(skip_images=True)
         errors = self._check(mock_get, '<img alt="image" src="http://no-image" />', 200, check)

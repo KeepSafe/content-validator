@@ -3,6 +3,8 @@ import re
 import difflib
 import hoep
 import logging
+import asyncio
+import aiohttp
 from bs4 import BeautifulSoup, element
 from urllib.parse import urlparse, urljoin
 from html2text import html2text
@@ -20,7 +22,9 @@ class TxtUrlCheck(object):
 
     def _make_request(self, url):
         try:
-            return requests.get(url).status_code
+            logging.info('checking {}'.format(url))
+            res = yield from aiohttp.request('get', url)
+            return res.status
         except Exception:
             logging.error('Error making request to %s', url)
             return 500
@@ -29,14 +33,14 @@ class TxtUrlCheck(object):
         new_status = status
         times = 1
         while times < self.retry_max_count and status == new_status:
-            new_status = self._make_request(url)
+            new_status = yield from self._make_request(url)
             times = times + 1
         return new_status
 
     def _request_status_code(self, url):
-        status = self._make_request(url)
+        status = yield from self._make_request(url)
         if status == 500:
-            return self._retry_request(url, status)
+            return (yield from self._retry_request(url, status))
         return status
 
     def _is_valid(self, status_code):
@@ -49,16 +53,26 @@ class TxtUrlCheck(object):
         result = set(match.group().strip(').') for match in re.finditer(self.url_pattern, content))
         return filter(self._without_params, result)
 
-    def _check_urls(self, urls):
+    @asyncio.coroutine
+    def _check_urls_coro(self, urls, future):
         errors = {}
         for url, paths in urls.items():
-            status_code = self._request_status_code(url)
+            status_code = yield from self._request_status_code(url)
             if not self._is_valid(status_code):
                 for path in paths:
                     error = errors.get(path, UrlError())
                     error.add_url(url, status_code)
                     errors[path] = error
-        return errors
+        future.set_result(errors)
+
+    def _check_urls(self, urls):
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        future = asyncio.Future()
+        loop.run_until_complete(self._check_urls_coro(urls, future))
+        loop.close()
+
+        return future.result()
 
     def check(self, paths, parser):
         urls = defaultdict(list)

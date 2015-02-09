@@ -1,6 +1,7 @@
 from unittest import TestCase
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 from pathlib import Path
+from . import AsyncTestCase
 
 import validator
 import validator.checks
@@ -9,7 +10,7 @@ import validator.parsers
 import validator.reports
 
 
-class TestUrls(TestCase):
+class TestUrls(AsyncTestCase):
 
     def _test_plain_text(self):
         files = validator.fs.files('tests/fixtures/flat/test.en.txt')
@@ -17,19 +18,23 @@ class TestUrls(TestCase):
         v = validator.Validator(checks=[urls], files=files)
         return v.validate()
 
-    @patch('requests.get')
+    @patch('aiohttp.request')
     def test_plain_text_success(self, mock_get):
-        mock_get.return_value.status_code = 200
+        res = MagicMock()
+        res.status = 200
+        mock_get.return_value = self.make_fut(res)
         errors = self._test_plain_text()
         self.assertEqual({}, errors)
 
-    @patch('requests.get')
+    @patch('aiohttp.request')
     def test_plain_text_failure(self, mock_get):
-        mock_get.return_value.status_code = 404
+        res = MagicMock()
+        res.status = 404
+        mock_get.return_value = self.make_fut(res)
         errors = self._test_plain_text()
         self.assertTrue(Path('tests/fixtures/flat/test.en.txt') in errors)
 
-    @patch('requests.get')
+    @patch('aiohttp.request')
     def test_md_with_params(self, mock_get):
         files = validator.fs.files('tests/fixtures/flat/url_with_params.md')
         urls = validator.checks.urls_html()
