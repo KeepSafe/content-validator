@@ -37,7 +37,7 @@ class TestUrls(TestCase):
 
         validator.Validator(checks=[urls], files=files, parser=parser).validate()
 
-        self.assertFalse(mock_get.call_args)
+        self.assertFalse(mock_get.called)
 
 
 class TestMarkdown(TestCase):

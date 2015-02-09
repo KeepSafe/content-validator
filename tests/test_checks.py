@@ -1,5 +1,5 @@
 from unittest import TestCase
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 
 from validator.checks import TxtUrlCheck, HtmlUrlCheck, MarkdownComparator
 
@@ -8,67 +8,61 @@ class TestTxtUrlChecker(TestCase):
 
     def setUp(self):
         self.check = TxtUrlCheck()
+        self.parser = MagicMock()
 
+    def _check(self, mock_get, content, status_code):
+        self.parser.parse.return_value = content
+        mock_get.return_value.status_code = status_code
+
+        return self.check.check(['dummy_path'], self.parser)
+
+    @patch('validator.checks.read_content')
     @patch('requests.get')
-    def test_happy_path(self, mock_get):
-        content = 'aaa http://www.google.com aaa'
-        mock_get.return_value.status_code = 200
+    def test_happy_path(self, mock_get, mock_read):
+        errors = self._check(mock_get, 'aaa http://www.google.com aaa', 200)
 
-        errors = self.check._check_content(content)
+        self.assertEqual({}, errors)
 
-        self.assertIsNone(errors)
-
+    @patch('validator.checks.read_content')
     @patch('requests.get')
-    def test_not_found(self, mock_get):
-        content = 'aaa http://www.google.com aaa'
-        mock_get.return_value.status_code = 404
+    def test_not_found(self, mock_get, mock_read):
+        errors = self._check(mock_get, 'aaa http://www.google.com aaa', 404)
 
-        errors = self.check._check_content(content)
+        self.assertIn('dummy_path', errors)
+        self.assertEqual({'http://www.google.com': 404}, errors['dummy_path'].urls)
 
-        self.assertIsNotNone(errors)
-
+    @patch('validator.checks.read_content')
     @patch('requests.get')
-    def test_retry_for_server_error(self, mock_get):
-        content = 'aaa http://www.google.com aaa'
-        mock_get.return_value.status_code = 500
-
-        errors = self.check._check_content(content)
+    def test_retry_for_server_error(self, mock_get, mock_read):
+        errors = self._check(mock_get, 'aaa http://www.google.com aaa', 500)
 
         self.assertEqual(3, mock_get.call_count)
 
+    @patch('validator.checks.read_content')
     @patch('requests.get')
-    def test_make_only_one_request_per_unique_url(self, mock_get):
-        content = 'aaa http://www.google.com aaa http://www.google.com aaa'
-        mock_get.return_value.status_code = 200
-
-        errors = self.check._check_content(content)
+    def test_make_only_one_request_per_unique_url(self, mock_get, mock_read):
+        errors = self._check(mock_get, 'aaa http://www.google.com aaa http://www.google.com aaa', 200)
 
         self.assertEqual(1, mock_get.call_count)
 
+    @patch('validator.checks.read_content')
     @patch('requests.get')
-    def test_skip_request_parameterized_urls(self, mock_get):
-        content = 'aaa http://{{url}} aaa'
-        mock_get.return_value.status_code = 200
-
-        errors = self.check._check_content(content)
+    def test_skip_request_parameterized_urls(self, mock_get, mock_read):
+        errors = self._check(mock_get, 'aaa http://{{url}} aaa', 200)
 
         self.assertFalse(mock_get.called)
 
+    @patch('validator.checks.read_content')
     @patch('requests.get')
-    def test_skip_empty_urls(self, mock_get):
-        content = 'aaa http:// aaa'
-        mock_get.return_value.status_code = 200
-
-        errors = self.check._check_content(content)
+    def test_skip_empty_urls(self, mock_get, mock_read):
+        errors = self._check(mock_get, 'aaa http:// aaa', 200)
 
         self.assertFalse(mock_get.called)
 
+    @patch('validator.checks.read_content')
     @patch('requests.get')
-    def test_skip_email(self, mock_get):
-        content = 'aaa support@getkeepsafe.com aaa'
-        mock_get.return_value.status_code = 200
-
-        errors = self.check._check_content(content)
+    def test_skip_email(self, mock_get, mock_read):
+        errors = self._check(mock_get, 'aaa support@getkeepsafe.com aaa', 200)
 
         self.assertFalse(mock_get.called)
 
@@ -77,78 +71,70 @@ class TestHtmlUrlChecker(TestCase):
 
     def setUp(self):
         self.check = HtmlUrlCheck()
+        self.parser = MagicMock()
 
+    def _check(self, mock_get, content, status_code, check=None):
+        check = check or self.check
+        self.parser.parse.return_value = content
+        mock_get.return_value.status_code = status_code
+
+        return check.check(['dummy_path'], self.parser)
+
+    @patch('validator.checks.read_content')
     @patch('requests.get')
-    def test_happy_path(self, mock_get):
-        content = '<a href="http://www.google.com">link</a>'
-        mock_get.return_value.status_code = 200
+    def test_happy_path(self, mock_get, mock_read):
+        errors = self._check(mock_get, '<a href="http://www.google.com">link</a>', 200)
 
-        errors = self.check._check_content(content)
+        mock_get.assert_called_with('http://www.google.com')
+        self.assertEqual({}, errors)
 
-        self.assertIsNone(errors)
-
+    @patch('validator.checks.read_content')
     @patch('requests.get')
-    def test_url_in_text_no_href(self, mock_get):
-        content = '<a>http://www.google.com</a>'
-        mock_get.return_value.status_code = 200
+    def test_url_in_text_no_href(self, mock_get, mock_read):
+        errors = self._check(mock_get, '<a>http://www.google.com</a>', 200)
 
-        errors = self.check._check_content(content)
+        self.assertEqual({}, errors)
 
-        self.assertIsNone(errors)
-
+    @patch('validator.checks.read_content')
     @patch('requests.get')
-    def test_add_http_if_missing(self, mock_get):
-        content = '<a href="www.google.com">link</a>'
-        mock_get.return_value.status_code = 200
+    def test_add_http_if_missing(self, mock_get, mock_read):
+        errors = self._check(mock_get, '<a href="www.google.com">link</a>', 200)
 
-        errors = self.check._check_content(content)
+        self.assertEqual({}, errors)
+
+    @patch('validator.checks.read_content')
+    @patch('requests.get')
+    def test_image(self, mock_get, mock_read):
+        errors = self._check(mock_get, '<img src="http://www.google.com">', 200)
 
         self.assertTrue(mock_get.called)
-        self.assertIsNone(errors)
 
+    @patch('validator.checks.read_content')
     @patch('requests.get')
-    def test_image(self, mock_get):
-        content = '<img src="http://www.google.com">'
-        mock_get.return_value.status_code = 200
-
-        self.check._check_content(content)
-
-        self.assertTrue(mock_get.called)
-
-    @patch('requests.get')
-    def test_skip_request_parameterized_urls(self, mock_get):
-        content = '<a href="{{url}}">link</a>'
-        mock_get.return_value.status_code = 200
-
-        self.check._check_content(content)
+    def test_skip_request_parameterized_urls(self, mock_get, mock_read):
+        errors = self._check(mock_get, '<a href="{{url}}">link</a>', 200)
 
         self.assertFalse(mock_get.called)
 
+    @patch('validator.checks.read_content')
     @patch('requests.get')
-    def test_skip_empty_urls(self, mock_get):
-        content = '<a href=""></a>'
-        mock_get.return_value.status_code = 200
-
-        self.check._check_content(content)
+    def test_skip_empty_urls(self, mock_get, mock_read):
+        errors = self._check(mock_get, '<a href=""></a>', 200)
 
         self.assertFalse(mock_get.called)
 
+    @patch('validator.checks.read_content')
     @patch('requests.get')
-    def test_skip_email(self, mock_get):
-        content = '<a href="support@getkeepsafe.com"></a>'
-        mock_get.return_value.status_code = 200
-
-        self.check._check_content(content)
+    def test_skip_email(self, mock_get, mock_read):
+        errors = self._check(mock_get, '<a href="support@getkeepsafe.com"></a>', 200)
 
         self.assertFalse(mock_get.called)
 
+    @patch('validator.checks.read_content')
     @patch('requests.get')
-    def test_skip_images(self, mock_get):
+    def test_skip_images(self, mock_get, mock_read):
         check = HtmlUrlCheck(skip_images=True)
-        content = '<img alt="image" src="http://no-image" />'
-        mock_get.return_value.status_code = 200
-
-        check._check_content(content)
+        errors = self._check(mock_get, '<img alt="image" src="http://no-image" />', 200, check)
 
         self.assertFalse(mock_get.called)
 

@@ -7,51 +7,14 @@ from bs4 import BeautifulSoup, element
 from urllib.parse import urlparse, urljoin
 from html2text import html2text
 from email.utils import parseaddr
+from collections import defaultdict
 
 from .reports import ContentError, UrlError, ComparisonError, MarkdownError
 from .fs import Filetype, read_content
 from .parsers import create_parser
 
 
-class ContentCheck(object):
-
-    def _check_content(self, content):
-        pass
-
-    def check(self, paths, parser):
-        errors = {}
-        for path in paths:
-            content = parser.parse(read_content(path))
-            error = self._check_content(content)
-            if error:
-                errors[path] = ContentError(path, error)
-        return errors
-
-
-class ComparisonCheck(object):
-
-    def _compare(self, base, other):
-        pass
-
-    def check(self, paths, parser):
-        if not paths:
-            return {}
-
-        errors = {}
-        base_path = paths.pop(0)
-        base = parser.parse(read_content(base_path))
-        for other_path in paths:
-            try:
-                other = parser.parse(read_content(other_path))
-            except FileNotFoundError:
-                other = ''
-            error = self._compare(base, other)
-            if error:
-                errors[other_path] = ComparisonError(base_path, other_path, error)
-        return errors
-
-
-class TxtUrlCheck(ContentCheck):
+class TxtUrlCheck(object):
     retry_max_count = 3
     url_pattern = r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
 
@@ -86,17 +49,25 @@ class TxtUrlCheck(ContentCheck):
         result = set(match.group().strip(').') for match in re.finditer(self.url_pattern, content))
         return filter(self._without_params, result)
 
-    def _check_content(self, content):
-        error = UrlError()
-        urls = self._extract_urls(content)
-        for url in urls:
+    def _check_urls(self, urls):
+        errors = {}
+        for url, paths in urls.items():
             status_code = self._request_status_code(url)
             if not self._is_valid(status_code):
-                error.add_url(url, status_code)
-        if error.has_errors():
-            return error
-        else:
-            return None
+                for path in paths:
+                    error = errors.get(path, UrlError())
+                    error.add_url(url, status_code)
+                    errors[path] = error
+        return errors
+
+    def check(self, paths, parser):
+        urls = defaultdict(list)
+        for path in paths:
+            content = parser.parse(read_content(path))
+            content_urls = self._extract_urls(content)
+            for url in content_urls:
+                urls[url].append(path)
+        return self._check_urls(urls)
 
 
 class HtmlUrlCheck(TxtUrlCheck):
@@ -172,7 +143,7 @@ class ReplaceTextContentRenderer(hoep.Hoep):
         return key
 
 
-class MarkdownComparator(ComparisonCheck):
+class MarkdownComparator(object):
 
     def _diff(self, base, other, base_mapping, other_mapping):
         diff = difflib.HtmlDiff(tabsize=4).make_table(base.splitlines(), other.splitlines())
@@ -211,6 +182,23 @@ class MarkdownComparator(ComparisonCheck):
             return MarkdownError(hoep.render(base, render_flags=hoep.HTML_SKIP_HTML), hoep.render(other, render_flags=hoep.HTML_SKIP_HTML), diff)
         else:
             return None
+
+    def check(self, paths, parser):
+        if not paths:
+            return {}
+
+        errors = {}
+        base_path = paths.pop(0)
+        base = parser.parse(read_content(base_path))
+        for other_path in paths:
+            try:
+                other = parser.parse(read_content(other_path))
+            except FileNotFoundError:
+                other = ''
+            error = self._compare(base, other)
+            if error:
+                errors[other_path] = ComparisonError(base_path, other_path, error)
+        return errors
 
 
 def urls_txt():
