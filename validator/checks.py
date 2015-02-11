@@ -16,6 +16,10 @@ from .fs import Filetype, read_content
 from .parsers import create_parser
 
 
+logging.getLogger('aiohttp').setLevel(logging.ERROR)
+logging.getLogger('asyncio').setLevel(logging.ERROR)
+
+
 class TxtUrlCheck(object):
     retry_max_count = 3
     url_pattern = r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
