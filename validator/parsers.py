@@ -19,6 +19,7 @@ class MarkdownParser(object):
         pass
 
     def parse(self, content):
+        content = content.strip()
         return markdown.markdown(content)
 
 
@@ -28,11 +29,12 @@ class XmlParser(object):
         self.query = kwargs.get('query', '*')
 
     def parse(self, content):
+        content = content.strip()
         if not content:
             return ''
         #TODO catch ParseError throw new exception and handle it one level up
         elements = ET.fromstring(content).findall(self.query)
-        text_elements = [element.text for element in elements]
+        text_elements = [element.text.strip() for element in elements]
         return '\n\n'.join(text_elements)
 
 

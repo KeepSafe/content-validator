@@ -8,26 +8,33 @@ from ..fs import read_content
 from ..model import HtmlDiff
 
 
+def save_file(content, filename):
+    with open(filename, 'w') as fp:
+        fp.write(content)
+
+
 class ReplaceTextContentRenderer(hoep.Hoep):
     _placeholder_pattern = '[placeholder{}]'
 
     def __init__(self, extensions=0, render_flags=0):
         super(ReplaceTextContentRenderer, self).__init__(extensions, render_flags)
-        self._counter = 1
-        self._links = 1
+        self._counter = 0
         self.mapping = {}
-
-    # def _link(self, link, title, content):
-    #     key = self.link_pattern.format(self.links)
-    #     self.links += 1
-    #     self.mapping[key] = content
-    #     return key
 
     def normal_text(self, text):
         if not text.strip():
             return text
-        key = self._placeholder_pattern.format(self._counter)
+            
+        # text with ' is treated as two elements, we need to fix that by appending text to previous value
+        if text.startswith('\\\'') and self.mapping:
+            key = self._placeholder_pattern.format(self._counter)
+            value = self.mapping[key]
+            value += text
+            self.mapping[key] = value
+            return ''
+            
         self._counter += 1
+        key = self._placeholder_pattern.format(self._counter)
         self.mapping[key] = text
         return key
 
@@ -55,7 +62,7 @@ class MarkdownComparator(object):
         return str(diff_soup)
 
     def _parse(self, content):
-        renderer = ReplaceTextContentRenderer()
+        renderer = ReplaceTextContentRenderer(render_flags=hoep.HTML_SKIP_LINKS)
         content_html = renderer.render(content)
         parsed_content = html2text(content_html).strip()
         parsed_content = re.sub(r'\([^\)]*\)', '()', parsed_content)
@@ -82,7 +89,7 @@ class MarkdownComparator(object):
                 other = parser.parse(read_content(other_path))
                 diff = self._compare(base, other)
                 if diff:
-                    htmldiff = HtmlDiff(base_path, other_path, diff)
+                    htmldiff = HtmlDiff(base_path, hoep.render(base), other_path, hoep.render(other), diff)
                     diffs.append(htmldiff)
         return diffs
         

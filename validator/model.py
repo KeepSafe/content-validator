@@ -17,8 +17,10 @@ class Url(object):
         self.files.append(path)
         
 class HtmlDiff(object):
-    def __init__(self, base_path, other_path, diff):
+    def __init__(self, base_path, base, other_path, other, diff):
         self.base_path = base_path
+        self.base = base
         self.other_path = other_path
+        self.other = other
         self.diff = diff
         

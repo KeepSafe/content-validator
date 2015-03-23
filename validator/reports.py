@@ -61,23 +61,19 @@ class HtmlReporter(object):
 
     #TODO remove isinstance
     def report(self, errors):
-        report_soup = BeautifulSoup(self.report_template)
         for error in errors:
             #TODO save to different files for links and diff
+            report_soup = BeautifulSoup(self.report_template)
             if isinstance(error, Url):
                 messages = ['<span>{} returned with code {}</span>'.format(error.url, status.code)]
                 self._add_content(report_soup, 'urls', '\n'.join(messages))
             if isinstance(error, HtmlDiff):
-                base_path = str(error.base_path)
-                base = read_content(error.base_path)
-                other_path = str(error.other_path)
-                other = read_content(error.other_path)
-                report_soup = self._add_content(report_soup, 'left_path', base_path)
-                report_soup = self._add_content(report_soup, 'right_path', other_path)
-                report_soup = self._add_content(report_soup, 'left_html', BeautifulSoup(base).body)
-                report_soup = self._add_content(report_soup, 'right_html', BeautifulSoup(other).body)
+                report_soup = self._add_content(report_soup, 'left_path', str(error.base_path))
+                report_soup = self._add_content(report_soup, 'right_path', str(error.other_path))
+                report_soup = self._add_content(report_soup, 'left_html', BeautifulSoup(error.base).body)
+                report_soup = self._add_content(report_soup, 'right_html', BeautifulSoup(error.other).body)
                 report_soup = self._add_content(report_soup, 'md_diff', BeautifulSoup(error.diff).body)
-        save_report(self.output_directory, error.other_path, report_soup.prettify())
+            save_report(self.output_directory, error.other_path, report_soup.prettify())
 
 
 class ConsoleReporter(object):
