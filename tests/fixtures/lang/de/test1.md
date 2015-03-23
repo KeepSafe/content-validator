@@ -1,11 +1,4 @@
-de-title
-=============
+##PIN timeout
+Do you go in and out of KeepSafe frequently? [Premium makes this safer and faster](http://support.getkeepsafe.com/hc/articles/204056310).
 
-# de-header 1
-
-de-some de-text and [de-link](www.google.com)  
-de-new de-line
-
-## de-header 2
-
-de-some de-more *bold* de-text
+Activate PIN timeout and KeepSafe stays unlocked for 30 seconds after you leave the app. If you come back within that time, you won’t have to enter your PIN.

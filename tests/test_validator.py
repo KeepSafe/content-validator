@@ -17,9 +17,8 @@ class TestUrls(AsyncTestCase):
 
     def _test_plain_text(self):
         files = validator.fs.files('tests/fixtures/flat/test.en.txt')
-        urls = validator.checks.urls_txt()
-        v = validator.Validator(checks=[urls], files=files)
-        return v.validate()
+        urls = validator.checks.urls(validator.fs.Filetype.txt)
+        return validator.validate(checks=[urls], files=files)
 
     @patch('aiohttp.request')
     def test_plain_text_success(self, mock_get):
@@ -27,7 +26,7 @@ class TestUrls(AsyncTestCase):
         res.status = 200
         mock_get.return_value = self.make_fut(res)
         errors = self._test_plain_text()
-        self.assertEqual({}, errors)
+        self.assertEqual([], errors)
 
     @patch('aiohttp.request')
     def test_plain_text_failure(self, mock_get):
@@ -35,15 +34,15 @@ class TestUrls(AsyncTestCase):
         res.status = 404
         mock_get.return_value = self.make_fut(res)
         errors = self._test_plain_text()
-        self.assertTrue(Path('tests/fixtures/flat/test.en.txt') in errors)
+        self.assertTrue(Path('tests/fixtures/flat/test.en.txt') in errors[0].files)
 
     @patch('aiohttp.request')
     def test_md_with_params(self, mock_get):
         files = validator.fs.files('tests/fixtures/flat/url_with_params.md')
-        urls = validator.checks.urls_html()
+        urls = validator.checks.urls(validator.fs.Filetype.html)
         parser = validator.parsers.create_parser(validator.fs.Filetype.md)
 
-        validator.Validator(checks=[urls], files=files, parser=parser).validate()
+        validator.validate(checks=[urls], files=files, parser=parser)
 
         self.assertFalse(mock_get.called)
 
@@ -53,20 +52,18 @@ class TestMarkdown(TestCase):
     def test_markdown_same_structure(self):
         files = validator.fs.files('tests/fixtures/lang/{lang}/test1.md', lang='en')
         comparator = validator.checks.markdown()
-        v = validator.Validator(checks=[comparator], files=files)
 
-        errors = v.validate()
+        errors = validator.validate(checks=[comparator], files=files)
 
-        self.assertEqual({}, errors)
+        self.assertEqual([], errors)
 
     def test_markdown_different_structure(self):
         files = validator.fs.files('tests/fixtures/lang/{lang}/test2.md', lang='en')
         comparator = validator.checks.markdown()
-        v = validator.Validator(checks=[comparator], files=files)
 
-        errors = v.validate()
+        errors = validator.validate(checks=[comparator], files=files)
 
-        self.assertNotEqual({}, errors)
+        self.assertNotEqual([], errors)
 
 class TestReporter(TestCase):
 
@@ -80,8 +77,7 @@ class TestReporter(TestCase):
         files = validator.fs.files('tests/fixtures/lang/{lang}/test2.md', lang='en')
         comparator = validator.checks.markdown()
         reporter = validator.reports.HtmlReporter(output_directory=self.output_dir)
-        v = validator.Validator(checks=[comparator], files=files, reporter=reporter)
 
-        v.validate()
+        validator.validate(checks=[comparator], files=files, reporter=reporter)
 
         self.assertNotEqual([], os.listdir(self.output_dir))

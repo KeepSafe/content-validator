@@ -4,7 +4,6 @@ import xml.etree.ElementTree as ET
 from .fs import Filetype
 
 
-
 class TxtParser(object):
 
     def __init__(self, **kwargs):
@@ -31,6 +30,7 @@ class XmlParser(object):
     def parse(self, content):
         if not content:
             return ''
+        #TODO catch ParseError throw new exception and handle it one level up
         elements = ET.fromstring(content).findall(self.query)
         text_elements = [element.text for element in elements]
         return '\n\n'.join(text_elements)
