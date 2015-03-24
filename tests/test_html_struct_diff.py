@@ -17,8 +17,7 @@ class TestMarkdownComparator(TestCase):
         self.check = markdown()
     
     def _test_markdown(self, mock_read, path1, path2):
-        parser = create_parser(Filetype.xml, query='.//string')
-        self.parser.parse.side_effect = iter([parser.parse(read(path1)), parser.parse(read(path2))])
+        self.parser.parse.side_effect = iter([read(path1), read(path2)])
         return self.check.check([['dummy_path1', 'dummy_path2']], self.parser)
 
     @patch('validator.checks.html_struct_diff.read_content')
@@ -35,8 +34,3 @@ class TestMarkdownComparator(TestCase):
         self.assertEqual('dummy_path1', diff.base_path)
         self.assertEqual('dummy_path2', diff.other_path)
         self.assertNotEqual('', diff.diff)
-
-    @patch('validator.checks.html_struct_diff.read_content')
-    def test_markdown(self, mock_read):
-        diffs = self._test_markdown(mock_read, 'tests/fixtures/lang/en/test3.md', 'tests/fixtures/lang/de/test3.md')
-        self.assertEqual([], diffs)

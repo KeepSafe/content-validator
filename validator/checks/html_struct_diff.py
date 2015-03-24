@@ -15,18 +15,28 @@ def save_file(content, filename):
 
 class ReplaceTextContentRenderer(hoep.Hoep):
     _placeholder_pattern = '[placeholder{}]'
+    _text_continuations = ['\\\'', '&']
 
     def __init__(self, extensions=0, render_flags=0):
         super(ReplaceTextContentRenderer, self).__init__(extensions, render_flags)
         self._counter = 0
         self.mapping = {}
+        
+    def _is_text_continuation(self, text):
+        """
+        Some characters like ' & and so on are treated as separate text elements. we need to concat them for comparison
+        """
+        for ch in self._text_continuations:
+            if text.startswith(ch):
+                return True
+        return False
 
     def normal_text(self, text):
         if not text.strip():
             return text
             
         # text with ' is treated as two elements, we need to fix that by appending text to previous value
-        if text.startswith('\\\'') and self.mapping:
+        if self._is_text_continuation(text) and self.mapping:
             key = self._placeholder_pattern.format(self._counter)
             value = self.mapping[key]
             value += text

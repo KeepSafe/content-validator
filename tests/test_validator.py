@@ -48,20 +48,21 @@ class TestUrls(AsyncTestCase):
 
 
 class TestMarkdown(TestCase):
+    
+    def setUp(self):
+        self.comparator = validator.checks.markdown()
 
     def test_markdown_same_structure(self):
         files = validator.fs.files('tests/fixtures/lang/{lang}/test1.md', lang='en')
-        comparator = validator.checks.markdown()
 
-        errors = validator.validate(checks=[comparator], files=files)
+        errors = validator.validate(checks=[self.comparator], files=files)
 
         self.assertEqual([], errors)
 
     def test_markdown_different_structure(self):
         files = validator.fs.files('tests/fixtures/lang/{lang}/test2.md', lang='en')
-        comparator = validator.checks.markdown()
 
-        errors = validator.validate(checks=[comparator], files=files)
+        errors = validator.validate(checks=[self.comparator], files=files)
 
         self.assertNotEqual([], errors)
 
@@ -81,3 +82,16 @@ class TestReporter(TestCase):
         validator.validate(checks=[comparator], files=files, reporter=reporter)
 
         self.assertNotEqual([], os.listdir(self.output_dir))
+
+class TestBugs(TestCase):
+    
+    def setUp(self):
+        self.comparator = validator.checks.markdown()
+
+    def test_markdown_text_continuation_characters(self):
+        files = validator.fs.files('tests/fixtures/bugs/continuations.{lang}.md', lang='en')
+
+        errors = validator.validate(checks=[self.comparator], files=files)
+
+        self.assertEqual([], errors)
+        

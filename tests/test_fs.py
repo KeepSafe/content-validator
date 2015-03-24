@@ -51,8 +51,7 @@ class TestPaths(TestCase):
 
         actual = list(files('tests/fixtures/lang/**/{order}.md', order='test1'))
 
-        for item in expected:
-            self.assertTrue(item in actual)
+        self.assertEqual(sorted(expected), sorted(actual))
 
     def test_two_parameters(self):
         expected = [[Path('tests/fixtures/lang/en/test1.md'), Path('tests/fixtures/lang/de/test1.md')]]
