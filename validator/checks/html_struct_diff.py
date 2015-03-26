@@ -35,7 +35,6 @@ class ReplaceTextContentRenderer(hoep.Hoep):
         if not text.strip():
             return text
             
-        # text with ' is treated as two elements, we need to fix that by appending text to previous value
         if self._is_text_continuation(text) and self.mapping:
             key = self._placeholder_pattern.format(self._counter)
             value = self.mapping[key]
