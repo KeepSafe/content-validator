@@ -55,7 +55,7 @@ class TestTxtUrlChecker(AsyncTestCase):
     @patch('validator.checks.url_validator.read_content')
     @patch('aiohttp.request')
     def test_skip_request_parameterized_urls(self, mock_get, mock_read):
-        errors = self._check(mock_get, 'aaa http://{{url}} aaa', 200)
+        errors = self._check(mock_get, 'aaa http://domain.com/{{param}} aaa', 200)
 
         self.assertFalse(mock_get.called)
 
@@ -72,6 +72,13 @@ class TestTxtUrlChecker(AsyncTestCase):
         errors = self._check(mock_get, 'aaa support@getkeepsafe.com aaa', 200)
 
         self.assertFalse(mock_get.called)
+
+    @patch('validator.checks.url_validator.read_content')
+    @patch('aiohttp.request')
+    def test_skip_commas(self, mock_get, mock_read):
+        errors = self._check(mock_get, 'aaa http://www.google.com, aaa', 404)
+
+        self.assertEqual('http://www.google.com', errors[0].url)
 
 
 class TestHtmlUrlChecker(AsyncTestCase):

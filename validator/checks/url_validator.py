@@ -19,11 +19,11 @@ class MissingValidatorError(Exception):
 
 
 class TextUrlExtractor(object):
-    
+
     def __init__(self, **kwargs):
         pass
-    
-    url_pattern = r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
+
+    url_pattern = r'http[s]?://(?:[a-zA-Z]|[0-9]|[$\-/_@.&+{}]|[!*\(\)]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
 
     def _without_params(self, url):
         return not bool(re.search(r'\{\{\w+\}\}', url))
@@ -80,11 +80,11 @@ class HtmlUrlExtractor(TextUrlExtractor):
             if fixed_url and self._without_params(fixed_url):
                 result.append(fixed_url)
         return result
-        
-        
+
+
 class UrlStatusChecker(object):
     retry_max_count = 3
-    
+
     def _make_request(self, url):
         try:
             logging.info('checking {}'.format(url))
@@ -110,7 +110,7 @@ class UrlStatusChecker(object):
 
     def _is_valid(self, status_code):
         return 200 <= status_code < 300
-        
+
     @asyncio.coroutine
     def _check_urls_coro(self, urls, future):
         for url in urls:
@@ -130,15 +130,15 @@ class UrlStatusChecker(object):
 class UrlValidator(object):
     _extractors = {
         Filetype.txt: TextUrlExtractor,
-        Filetype.html: HtmlUrlExtractor        
+        Filetype.html: HtmlUrlExtractor
     }
-    
+
     def __init__(self, filetype, **kwargs):
         extractor_class = self._extractors.get(filetype)
         if extractor_class is None:
             raise MissingValidatorError('there is no validator for filetype %s', filetype)
         self.extractor = extractor_class(**kwargs)
-    
+
     def check(self, paths, parser):
         flat_paths = set(p for sublist in paths for p in sublist)
         urls = {}
@@ -152,5 +152,3 @@ class UrlValidator(object):
         checker = UrlStatusChecker()
         invalid_urls = checker.check(urls.values())
         return invalid_urls
-            
-        
