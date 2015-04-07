@@ -10,7 +10,7 @@ class TxtParser(object):
         pass
 
     def parse(self, content):
-        return content.strip()
+        return content
 
 
 class MarkdownParser(object):
@@ -19,7 +19,6 @@ class MarkdownParser(object):
         pass
 
     def parse(self, content):
-        content = content.strip()
         return markdown.markdown(content)
 
 

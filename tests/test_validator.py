@@ -48,7 +48,7 @@ class TestUrls(AsyncTestCase):
 
 
 class TestMarkdown(TestCase):
-    
+
     def setUp(self):
         self.comparator = validator.checks.markdown()
 
@@ -84,7 +84,7 @@ class TestReporter(TestCase):
         self.assertNotEqual([], os.listdir(self.output_dir))
 
 class TestBugs(TestCase):
-    
+
     def setUp(self):
         self.comparator = validator.checks.markdown()
 
@@ -94,4 +94,10 @@ class TestBugs(TestCase):
         errors = validator.validate(checks=[self.comparator], files=files)
 
         self.assertEqual([], errors)
-        
+
+    def test_markdown_text_code_block(self):
+        files = validator.fs.files('tests/fixtures/bugs/code_block.{lang}.md', lang='en')
+
+        errors = validator.validate(checks=[self.comparator], files=files)
+
+        self.assertEqual([], errors)

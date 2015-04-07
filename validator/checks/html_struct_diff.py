@@ -21,7 +21,7 @@ class ReplaceTextContentRenderer(hoep.Hoep):
         super(ReplaceTextContentRenderer, self).__init__(extensions, render_flags)
         self._counter = 0
         self.mapping = {}
-        
+
     def _is_text_continuation(self, text):
         """
         Some characters like ' & and so on are treated as separate text elements. we need to concat them for comparison
@@ -34,18 +34,21 @@ class ReplaceTextContentRenderer(hoep.Hoep):
     def normal_text(self, text):
         if not text.strip():
             return text
-            
+
         if self._is_text_continuation(text) and self.mapping:
             key = self._placeholder_pattern.format(self._counter)
             value = self.mapping[key]
             value += text
             self.mapping[key] = value
             return ''
-            
+
         self._counter += 1
         key = self._placeholder_pattern.format(self._counter)
         self.mapping[key] = text
         return key
+
+    def block_code(self, text, language):
+        return self.normal_text(text)
 
 
 class MarkdownComparator(object):
@@ -89,7 +92,7 @@ class MarkdownComparator(object):
     def check(self, paths, parser):
         if not paths:
             return []
-            
+
         diffs = []
         for path_set in paths:
             base_path = path_set.pop(0)
@@ -101,4 +104,3 @@ class MarkdownComparator(object):
                     htmldiff = HtmlDiff(base_path, hoep.render(base), other_path, hoep.render(other), diff)
                     diffs.append(htmldiff)
         return diffs
-        
