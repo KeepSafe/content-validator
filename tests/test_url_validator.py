@@ -61,6 +61,13 @@ class TestTxtUrlChecker(AsyncTestCase):
 
     @patch('validator.checks.url_validator.read_content')
     @patch('aiohttp.request')
+    def test_include_params_in_the_url(self, mock_get, mock_read):
+        errors = self._check(mock_get, 'aaa http://domain.com/hello?id=123 aaa', 200)
+
+        mock_get.assert_called_with('get', 'http://domain.com/hello?id=123')
+
+    @patch('validator.checks.url_validator.read_content')
+    @patch('aiohttp.request')
     def test_skip_empty_urls(self, mock_get, mock_read):
         errors = self._check(mock_get, 'aaa http:// aaa', 200)
 

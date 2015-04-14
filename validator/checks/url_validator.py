@@ -23,7 +23,7 @@ class TextUrlExtractor(object):
     def __init__(self, **kwargs):
         pass
 
-    url_pattern = r'http[s]?://(?:[a-zA-Z]|[0-9]|[$\-/_@.&+{}]|[!*\(\)]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
+    url_pattern = r"(?i)\b((?:https?:(?:/{1,3}|[a-z0-9%])|[a-z0-9.\-]+[.](?:[a-z]{2,13})/)(?:[^\s()<>\[\]]+|\([^\s()]*?\([^\s()]+\)[^\s()]*?\)|\([^\s]+?\))+(?:\([^\s()]*?\([^\s()]+\)[^\s()]*?\)|\([^\s]+?\)|[^\s`!()\[\];:'\".,<>?«»“”‘’])|(?:(?<!@)[a-z0-9]+(?:[.\-][a-z0-9]+)*[.](?:[a-z]{2,13})\b/?(?!@)))"
 
     def _without_params(self, url):
         return not bool(re.search(r'\{\{\w+\}\}', url))
