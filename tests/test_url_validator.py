@@ -54,8 +54,15 @@ class TestTxtUrlChecker(AsyncTestCase):
 
     @patch('validator.checks.url_validator.read_content')
     @patch('aiohttp.request')
-    def test_skip_request_parameterized_urls(self, mock_get, mock_read):
+    def test_skip_parameterized_urls_in_middle(self, mock_get, mock_read):
         errors = self._check(mock_get, 'aaa http://domain.com/{{param}} aaa', 200)
+
+        self.assertFalse(mock_get.called)
+
+    @patch('validator.checks.url_validator.read_content')
+    @patch('aiohttp.request')
+    def test_skip_parameterized_urls_from_start(self, mock_get, mock_read):
+        errors = self._check(mock_get, 'aaa http://{{ticket.url}}, aaa', 200)
 
         self.assertFalse(mock_get.called)
 
@@ -83,9 +90,23 @@ class TestTxtUrlChecker(AsyncTestCase):
     @patch('validator.checks.url_validator.read_content')
     @patch('aiohttp.request')
     def test_skip_commas(self, mock_get, mock_read):
-        errors = self._check(mock_get, 'aaa http://www.google.com, aaa', 404)
+        errors = self._check(mock_get, 'aaa http://{{ticket.url}}, aaa', 404)
 
-        self.assertEqual('http://www.google.com', errors[0].url)
+        self.assertFalse(mock_get.called)
+
+    @patch('validator.checks.url_validator.read_content')
+    @patch('aiohttp.request')
+    def test_skip_commas(self, mock_get, mock_read):
+        errors = self._check(mock_get, 'aaa http://www.google.com, aaa', 200)
+
+        mock_get.assert_called_with('get', 'http://www.google.com')
+
+    @patch('validator.checks.url_validator.read_content')
+    @patch('aiohttp.request')
+    def test_skip_commas(self, mock_get, mock_read):
+        errors = self._check(mock_get, 'aaa http://bit.ly/UpdateKeepSafe。拥有最新版本就能解决大部分问题了。 aaa', 200)
+
+        mock_get.assert_called_with('get', 'http://bit.ly/UpdateKeepSafe')
 
 
 class TestHtmlUrlChecker(AsyncTestCase):

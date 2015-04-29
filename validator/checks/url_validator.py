@@ -2,6 +2,7 @@ import re
 import logging
 import asyncio
 import aiohttp
+import string
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse, urljoin
 from collections import defaultdict
@@ -26,11 +27,14 @@ class TextUrlExtractor(object):
     url_pattern = r'(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\];:\'".,<>?\xab\xbb\u201c\u201d\u2018\u2019]))'
 
     def _without_params(self, url):
-        return not bool(re.search(r'\{\{\w+\}\}', url))
+        return not bool(re.search(r'\{\{[a-zA-Z0-9_.]+\}\}', url))
+
+    def _strip_non_ascii_chars(self, url):
+        return ''.join(filter(lambda c: c in string.printable, url))
 
     def extract_urls(self, content):
         result = set(match.group().strip(').') for match in re.finditer(self.url_pattern, content))
-        return filter(self._without_params, result)
+        return filter(self._without_params, map(self._strip_non_ascii_chars, result))
 
 
 class HtmlUrlExtractor(TextUrlExtractor):
