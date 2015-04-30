@@ -19,9 +19,9 @@ Generally it's easiest to write a separate test for each validation case. The si
 f = files('src/**/*.txt')
 parser = create_parser(Filetype.txt)
 reporter = ConsoleReporter()
-check = urls_txt()
-v = Validator(checks=[check], files=f, parser=parser, reporter=reporter)
-self.assertEqual({}, v.validate())
+check = urls(Filetype.txt)
+result = validator.validate(checks=[check], files=f, parser=parser, reporter=reporter)
+self.assertEqual([], result)
 ```
 
 ### Files
@@ -62,8 +62,7 @@ Checks perform validation on the content. Wether it's url or structure or anythi
 
 Available checks:
 
-* `urls_txt()` - validates if the url is accessible in a text file
-* `urls_html(root_url='', skip_images=False)` - same as text but extracts links from `<a>` and `<img>`. You can provide root for relative urls and skip `<img>` if needed
+* `urls(filetype, skip_images=False)` - validates if the url is accessible
 * `markdown()` - validates markdown structure by comparing it with the base
 
 ## Example
@@ -78,30 +77,14 @@ class TestEmail(TestCase):
         parser = create_parser(Filetype.xml, query='.//string')
         reporter = HtmlReporter()
         md = markdown()
-        v = Validator(checks=[md], files=f, parser=parser, reporter=reporter)
+        result = validator.validate(checks=[md], files=f, parser=parser, reporter=reporter)
         self.assertEqual({}, v.validate())
 
     def test_urls(self):
         f = files('src/{lang}/*.xml', lang='en')
         parser = chain_parsers([Filetype.xml, Filetype.md], query='.//string')
         reporter = ConsoleReporter()
-        urls = urls_html(skip_images=True)
-        v = Validator(checks=[urls], files=f, parser=parser, reporter=reporter)
-        self.assertEqual({}, v.validate())
-
-    def test_in_html_output(self):
-        f = files('target/{lang}/*.html', lang='en')
-        parser = create_parser(Filetype.txt)
-        reporter = ConsoleReporter()
-        urls = urls_html()
-        v = Validator(checks=[urls], files=f, parser=parser, reporter=reporter)
-        self.assertEqual({}, v.validate())
-
-    def test_in_txt_output(self):
-        f = files('target/{lang}/*.text', lang='en')
-        parser = create_parser(Filetype.txt)
-        reporter = ConsoleReporter()
-        urls = urls_txt()
-        v = Validator(checks=[urls], files=f, parser=parser, reporter=reporter)
+        check = urls(Filetype.html, skip_images=True)
+        result = Validator(checks=[check], files=f, parser=parser, reporter=reporter)
         self.assertEqual({}, v.validate())
 ```
