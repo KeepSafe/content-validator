@@ -90,6 +90,7 @@ class UrlStatusChecker(object):
     retry_max_count = 3
 
     def _make_request(self, url):
+        res = None
         try:
             logging.info('checking {}'.format(url))
             res = yield from aiohttp.request('get', url)
@@ -97,6 +98,9 @@ class UrlStatusChecker(object):
         except Exception:
             logging.error('Error making request to %s', url)
             return 500
+        finally:
+            if res:
+                res.close()
 
     def _retry_request(self, url, status):
         new_status = status
