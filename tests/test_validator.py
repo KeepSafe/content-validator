@@ -101,3 +101,10 @@ class TestBugs(TestCase):
         errors = validator.validate(checks=[self.comparator], files=files)
 
         self.assertEqual([], errors)
+
+    def test_markdown_text_order(self):
+        files = validator.fs.files('tests/fixtures/bugs/ignore_order_in_text.{lang}.md', lang='en')
+
+        errors = validator.validate(checks=[self.comparator], files=files)
+
+        self.assertEqual([], errors)

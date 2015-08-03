@@ -1,4 +1,4 @@
-from .html_struct_diff import MarkdownComparator
+from .md_struct_diff import MarkdownComparator
 from .url_validator import UrlValidator
 
 
