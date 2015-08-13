@@ -1,11 +1,21 @@
 CHANGES
 =======
 
+0.3.1 (2015-08-13)
+------------------
+
+- Update markdown validator.
+- Better messages in email structure error html.
+
+0.3.0 (2015-08-03)
+------------------
+
+- New markdown validator.
+
 0.2.5 (2015-04-29)
 ------------------
 
 - More restrictive pattern.
-
 
 0.2.4 (2015-04-14)
 ------------------

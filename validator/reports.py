@@ -39,26 +39,20 @@ class HtmlReporter(object):
         <p>
             The elements on the left show the reference text, the elements on the right the translation.<br />
             The elements that are missing are highlighted in green, the ones which are unnecessary are highlighted in red. <br />
-            The tool is not always 100% accurate, if you think the text is correct please contact KeepSafe's employee.
+            The tool is not always 100% accurate, sometimes it might show things that are correct as errors if there are other errors int the text. <br />
+            Please correct the errors you can find first. If you think the text is correct and the tool is still showing errors please contact KeepSafe's employee.
         </p>
     </div>
-
-    <h4>This is the filepath or the original text and the translation</h4>
-    <table class="diff" id="difflib_chg_to4__top"
-           cellspacing="0" cellpadding="0" rules="groups" >
-        <colgroup></colgroup> <colgroup></colgroup> <colgroup></colgroup>
-        <colgroup></colgroup> <colgroup></colgroup> <colgroup></colgroup>
-
-        <tbody>
-        <tr><td width="50%" id="left_path"></td><td width="50%" id="right_path"></td></tr>
-        </tbody>
-    </table>
 
     <h4>This is how the text will look to the user</h4>
     <table class="diff" id="difflib_chg_to4__top"
            cellspacing="0" cellpadding="0" rules="groups" >
         <colgroup></colgroup> <colgroup></colgroup> <colgroup></colgroup>
         <colgroup></colgroup> <colgroup></colgroup> <colgroup></colgroup>
+
+        <thead>
+        <tr><td width="50%" id="left_path"></td><td width="50%" id="right_path"></td></tr>
+        </thead>
 
         <tbody>
         <tr><td width="50%"><p id="left_html"></p></td><td width="50%"><p id="right_html"></p></td></tr>
@@ -104,6 +98,7 @@ class HtmlReporter(object):
         shutil.rmtree(self.output_directory, ignore_errors=True)
         for error in errors:
             #TODO save to different files for links and diff
+            #TODO use mustache for templates
             report_soup = BeautifulSoup(self.report_template)
             if isinstance(error, Url):
                 messages = ['<span>{} returned with code {}</span>'.format(error.url, status.code)]
@@ -116,7 +111,7 @@ class HtmlReporter(object):
                 report_soup = self._add_content(report_soup, 'right_html', BeautifulSoup(error.other).body)
                 report_soup = self._add_content(report_soup, 'left_diff', BeautifulSoup(error.base_diff).body)
                 report_soup = self._add_content(report_soup, 'right_diff', BeautifulSoup(error.other_diff).body)
-                report_soup = self._add_content(report_soup, 'error_msgs', error_msgs)
+                report_soup = self._add_content(report_soup, 'error_msgs', BeautifulSoup(error_msgs).body)
             save_report(self.output_directory, error.other_path, report_soup.prettify())
 
 
