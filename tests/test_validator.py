@@ -66,6 +66,17 @@ class TestMarkdown(TestCase):
 
         self.assertNotEqual([], errors)
 
+    def test_markdown_single(self):
+        files = validator.fs.files('tests/fixtures/lang/{lang}/test1.md', lang='en')
+        row = next(files)
+        base = row[0]
+        other = row[1]
+
+        errors = validator.validate_single([self.comparator], base, other)
+
+        self.assertEqual([], errors)
+
+
 class TestReporter(TestCase):
 
     def setUp(self):

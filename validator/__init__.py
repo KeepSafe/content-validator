@@ -1,5 +1,6 @@
 from enum import Enum
 from collections import defaultdict
+from pathlib import Path
 
 from .parsers import TxtParser
 from .reports import ConsoleReporter
@@ -14,3 +15,10 @@ def validate(checks=[], files=[], parser=TxtParser(), reporter=None):
             reporter.report(check_errors)
 
     return errors
+
+
+def validate_single(checks, base_path, other_path, parser=TxtParser(), reporter=None):
+    base = Path(base_path)
+    other = Path(other_path)
+    files = [[base, other]]
+    return validate(checks, files, parser, reporter)
