@@ -120,3 +120,10 @@ class TestBugs(TestCase):
         errors = validator.validate(checks=[self.comparator], files=files)
 
         self.assertEqual([], errors)
+
+
+class TestText(TestCase):
+    def test_happy_path(self):
+        checks = [validator.checks.markdown()]
+        actual = validator.validate_text(checks, '##aaa\n\naaa', '##bbb\n\nbbb')
+        self.assertIsNone(actual)

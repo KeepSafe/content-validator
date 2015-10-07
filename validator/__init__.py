@@ -1,7 +1,9 @@
 from enum import Enum
 from collections import defaultdict
 from pathlib import Path
+from markdown import markdown
 
+from sdiff import renderer, diff
 from .parsers import TxtParser
 from .reports import ConsoleReporter
 
@@ -22,3 +24,9 @@ def validate_single(checks, base_path, other_path, parser=TxtParser(), reporter=
     other = Path(other_path)
     files = [[base, other]]
     return validate(checks, files, parser, reporter)
+
+
+def validate_text(checks, base, other, parser=TxtParser(), reporter=None):
+    other_diff, base_diff, error = diff(other, base, renderer=renderer.HtmlRenderer())
+    if error:
+        return HtmlDiff(base_path, markdown(base), base_diff, other_path, markdown(other), other_diff, error)
