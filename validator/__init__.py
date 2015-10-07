@@ -6,6 +6,7 @@ from markdown import markdown
 from sdiff import renderer, diff
 from .parsers import TxtParser
 from .reports import ConsoleReporter
+from .model import HtmlDiff
 
 
 def validate(checks=[], files=[], parser=TxtParser(), reporter=None):
