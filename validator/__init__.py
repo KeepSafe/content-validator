@@ -30,4 +30,5 @@ def validate_single(checks, base_path, other_path, parser=TxtParser(), reporter=
 def validate_text(checks, base, other, parser=TxtParser(), reporter=None):
     other_diff, base_diff, error = diff(other, base, renderer=renderer.HtmlRenderer())
     if error:
-        return HtmlDiff(base_path, markdown(base), base_diff, other_path, markdown(other), other_diff, error)
+        # TODO better api
+        return HtmlDiff('', markdown(base), base_diff, '', markdown(other), other_diff, error)

@@ -123,7 +123,12 @@ class TestBugs(TestCase):
 
 
 class TestText(TestCase):
-    def test_happy_path(self):
+    def test_same(self):
         checks = [validator.checks.markdown()]
         actual = validator.validate_text(checks, '##aaa\n\naaa', '##bbb\n\nbbb')
         self.assertIsNone(actual)
+
+    def test_different(self):
+        checks = [validator.checks.markdown()]
+        actual = validator.validate_text(checks, '#aaa\n\naaa', '##bbb\n\nbbb')
+        self.assertIsNotNone(actual)
