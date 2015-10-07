@@ -94,6 +94,7 @@ class TestReporter(TestCase):
 
         self.assertNotEqual([], os.listdir(self.output_dir))
 
+
 class TestBugs(TestCase):
 
     def setUp(self):
