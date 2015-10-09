@@ -2,9 +2,10 @@ from bs4 import BeautifulSoup
 import logging
 import sys
 import shutil
+import markdown
 
 from .fs import save_report, read_content
-from .model import Url, HtmlDiff
+from .errors import UrlDiff, MdDiff
 
 
 class HtmlReporter(object):
@@ -50,12 +51,8 @@ class HtmlReporter(object):
         <colgroup></colgroup> <colgroup></colgroup> <colgroup></colgroup>
         <colgroup></colgroup> <colgroup></colgroup> <colgroup></colgroup>
 
-        <thead>
-        <tr><td width="50%" id="left_path"></td><td width="50%" id="right_path"></td></tr>
-        </thead>
-
         <tbody>
-        <tr><td width="50%"><p id="left_html"></p></td><td width="50%"><p id="right_html"></p></td></tr>
+        <tr><td width="50%"><p id="left_content"></p></td><td width="50%"><p id="right_content"></p></td></tr>
         </tbody>
     </table>
 
@@ -89,37 +86,38 @@ class HtmlReporter(object):
         if tags and content:
             tags[0].append(content)
         else:
-            print('missing tag: %s, content %s' % (tags, content))
+            print('missing tag: %s, content %s' % (tag_id, content))
         return soup
 
-
-    #TODO remove isinstance
+    # TODO just rewrite !!!
+    # TODO remove isinstance
     def report(self, errors):
         shutil.rmtree(self.output_directory, ignore_errors=True)
         for error in errors:
-            #TODO save to different files for links and diff
-            #TODO use mustache for templates
+            # TODO save to different files for links and diff
+            # TODO use mustache for templates
             report_soup = BeautifulSoup(self.report_template)
-            if isinstance(error, Url):
-                messages = ['<span>{} returned with code {}</span>'.format(error.url, status.code)]
+            if isinstance(error, UrlDiff):
+                messages = ['<span>{} returned with code {}</span>'.format(error.url, error.status_code)]
                 self._add_content(report_soup, 'urls', '\n'.join(messages))
-            if isinstance(error, HtmlDiff):
-                error_msgs = '<br />'.join(map(lambda i: str(i), error.errors))
-                report_soup = self._add_content(report_soup, 'left_path', str(error.base_path))
-                report_soup = self._add_content(report_soup, 'right_path', str(error.other_path))
-                report_soup = self._add_content(report_soup, 'left_html', BeautifulSoup(error.base).body)
-                report_soup = self._add_content(report_soup, 'right_html', BeautifulSoup(error.other).body)
-                report_soup = self._add_content(report_soup, 'left_diff', BeautifulSoup(error.base_diff).body)
-                report_soup = self._add_content(report_soup, 'right_diff', BeautifulSoup(error.other_diff).body)
+            if isinstance(error, MdDiff):
+                error_msgs = '<br />'.join(map(lambda i: str(i), error.error_msgs))
+                base = markdown.markdown(error.base.parsed)
+                other = markdown.markdown(error.other.parsed)
+                report_soup = self._add_content(report_soup, 'left_content', BeautifulSoup(base).body)
+                report_soup = self._add_content(report_soup, 'right_content', BeautifulSoup(other).body)
+                report_soup = self._add_content(report_soup, 'left_diff', BeautifulSoup(error.base.diff).body)
+                report_soup = self._add_content(report_soup, 'right_diff', BeautifulSoup(error.other.diff).body)
                 report_soup = self._add_content(report_soup, 'error_msgs', BeautifulSoup(error_msgs).body)
-            save_report(self.output_directory, error.other_path, report_soup.prettify())
+            save_report(self.output_directory, error.other.original, report_soup.prettify())
 
 
 class ConsoleReporter(object):
+
     def report(self, errors):
         for error in errors:
             if isinstance(error, Url):
-                print('{} returned with code {} for files'.format(error.url, error.status_code))
+                print('{} returned with code {}'.format(error.url, error.status_code))
                 for path in error.files:
                     print('\t{}'.format(str(path)))
                 print()
@@ -128,6 +126,7 @@ class ConsoleReporter(object):
 
 
 class StoreReporter(object):
+
     def __init__(self):
         self.log = []
 
@@ -139,3 +138,12 @@ class StoreReporter(object):
                     self.log.append('\t%s' % str(path))
             if isinstance(error, HtmlDiff):
                 self.log.append('Files are different:\n\t%s\n\t%s\n\n' % (str(error.base_path), str(error.other_path)))
+
+
+class ChainReporter(object):
+    def __init__(self, reporters):
+        self.reporters = reporters
+
+    def report(self, errors):
+        for reporter in self.reporters:
+            reporter.report(errors)

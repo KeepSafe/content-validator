@@ -7,18 +7,12 @@ import shutil
 from . import AsyncTestCase
 
 import validator
-import validator.checks
-import validator.fs
-import validator.parsers
-import validator.reports
 
 
 class TestUrls(AsyncTestCase):
 
     def _test_plain_text(self):
-        files = validator.fs.files('tests/fixtures/flat/test.en.txt')
-        urls = validator.checks.urls(validator.fs.Filetype.txt)
-        return validator.validate(checks=[urls], files=files)
+        return validator.parse().files('tests/fixtures/flat/test.en.txt').check().url().validate()
 
     @patch('aiohttp.request')
     def test_plain_text_success(self, mock_get):
@@ -38,41 +32,25 @@ class TestUrls(AsyncTestCase):
 
     @patch('aiohttp.request')
     def test_md_with_params(self, mock_get):
-        files = validator.fs.files('tests/fixtures/flat/url_with_params.md')
-        urls = validator.checks.urls(validator.fs.Filetype.html)
-        parser = validator.parsers.create_parser(validator.fs.Filetype.md)
-
-        validator.validate(checks=[urls], files=files, parser=parser)
-
+        validator.parse().files('tests/fixtures/flat/url_with_params.md').md().check().url().validate()
         self.assertFalse(mock_get.called)
 
 
 class TestMarkdown(TestCase):
 
-    def setUp(self):
-        self.comparator = validator.checks.markdown()
-
     def test_markdown_same_structure(self):
-        files = validator.fs.files('tests/fixtures/lang/{lang}/test1.md', lang='en')
-
-        errors = validator.validate(checks=[self.comparator], files=files)
+        errors = validator.parse().files('tests/fixtures/lang/{lang}/test1.md', lang='en').check().md().validate()
 
         self.assertEqual([], errors)
 
     def test_markdown_different_structure(self):
-        files = validator.fs.files('tests/fixtures/lang/{lang}/test2.md', lang='en')
-
-        errors = validator.validate(checks=[self.comparator], files=files)
+        errors = validator.parse().files('tests/fixtures/lang/{lang}/test2.md', lang='en').check().md().validate()
 
         self.assertNotEqual([], errors)
 
     def test_markdown_single(self):
-        files = validator.fs.files('tests/fixtures/lang/{lang}/test1.md', lang='en')
-        row = next(files)
-        base = row[0]
-        other = row[1]
-
-        errors = validator.validate_single([self.comparator], base, other)
+        errors = validator.parse().file(
+            'tests/fixtures/lang/en/test1.md', 'tests/fixtures/lang/en/test1.md').check().md().validate()
 
         self.assertEqual([], errors)
 
@@ -86,49 +64,45 @@ class TestReporter(TestCase):
         shutil.rmtree(self.output_dir)
 
     def test_report_saved(self):
-        files = validator.fs.files('tests/fixtures/lang/{lang}/test2.md', lang='en')
-        comparator = validator.checks.markdown()
-        reporter = validator.reports.HtmlReporter(output_directory=self.output_dir)
-
-        validator.validate(checks=[comparator], files=files, reporter=reporter)
+        errors = validator \
+            .parse() \
+            .files('tests/fixtures/lang/{lang}/test2.md', lang='en') \
+            .check() \
+            .md() \
+            .report() \
+            .html(self.output_dir) \
+            .validate()
 
         self.assertNotEqual([], os.listdir(self.output_dir))
 
 
 class TestBugs(TestCase):
 
-    def setUp(self):
-        self.comparator = validator.checks.markdown()
+    def _run_and_assert(self, query, **kwargs):
+        errors = validator.parse().files(query, **kwargs).md().check().url().validate()
+
+        self.assertEqual([], errors)
 
     def test_markdown_text_continuation_characters(self):
-        files = validator.fs.files('tests/fixtures/bugs/continuations.{lang}.md', lang='en')
-
-        errors = validator.validate(checks=[self.comparator], files=files)
-
-        self.assertEqual([], errors)
+        self._run_and_assert('tests/fixtures/bugs/continuations.{lang}.md', lang='en')
 
     def test_markdown_text_code_block(self):
-        files = validator.fs.files('tests/fixtures/bugs/code_block.{lang}.md', lang='en')
-
-        errors = validator.validate(checks=[self.comparator], files=files)
-
-        self.assertEqual([], errors)
+        self._run_and_assert('tests/fixtures/bugs/code_block.{lang}.md', lang='en')
 
     def test_markdown_text_order(self):
-        files = validator.fs.files('tests/fixtures/bugs/ignore_order_in_text.{lang}.md', lang='en')
-
-        errors = validator.validate(checks=[self.comparator], files=files)
-
-        self.assertEqual([], errors)
+        self._run_and_assert('tests/fixtures/bugs/ignore_order_in_text.{lang}.md', lang='en')
 
 
 class TestText(TestCase):
+
     def test_same(self):
-        checks = [validator.checks.markdown()]
-        actual = validator.validate_text(checks, '##aaa\n\naaa', '##bbb\n\nbbb')
-        self.assertIsNone(actual)
+        t1 = '##aaa\n\naaa'
+        t2 = '##bbb\n\nbbb'
+        errors = validator.parse().text(t1, t2).check().md().validate()
+        self.assertEqual([], errors)
 
     def test_different(self):
-        checks = [validator.checks.markdown()]
-        actual = validator.validate_text(checks, '#aaa\n\naaa', '##bbb\n\nbbb')
-        self.assertIsNotNone(actual)
+        t1 = '##aaa\n\naaa'
+        t2 = '#bbb\n\nbbb'
+        errors = validator.parse().text(t1, t2).check().md().validate()
+        self.assertNotEqual([], errors)

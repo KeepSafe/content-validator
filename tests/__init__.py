@@ -1,6 +1,7 @@
 import asyncio
 from unittest import TestCase
 
+
 class AsyncTestCase(TestCase):
 
     def setUp(self):

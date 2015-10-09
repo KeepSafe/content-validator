@@ -7,15 +7,14 @@ from bs4 import BeautifulSoup
 from urllib.parse import urlparse, urljoin
 from collections import defaultdict
 
-from ..fs import Filetype, read_content
-from ..model import Url
+from ..errors import UrlDiff
 
 
 logging.getLogger('aiohttp').setLevel(logging.ERROR)
 logging.getLogger('asyncio').setLevel(logging.ERROR)
 
 
-class MissingValidatorError(Exception):
+class MissingUrlExtractorError(Exception):
     pass
 
 
@@ -24,7 +23,9 @@ class TextUrlExtractor(object):
     def __init__(self, **kwargs):
         pass
 
-    url_pattern = r'(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\];:\'".,<>?\xab\xbb\u201c\u201d\u2018\u2019]))'
+    url_pattern = r'(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]' \
+        '+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[' \
+        '\];:\'".,<>?\xab\xbb\u201c\u201d\u2018\u2019]))'
 
     def _without_params(self, url):
         return not bool(re.search(r'\{\{[a-zA-Z0-9_.]+\}\}', url))
@@ -44,10 +45,10 @@ class HtmlUrlExtractor(TextUrlExtractor):
         self.skip_images = skip_images
 
     def _validate_email(self, email):
-    	if len(email) > 7:
-    		if re.match('^.+\\@(\\[?)[a-zA-Z0-9\\-\\.]+\\.([a-zA-Z]{2,3}|[0-9]{1,3})(\\]?)$', email):
-    			return True
-    	return False
+        if len(email) > 7:
+            if re.match('^.+\\@(\\[?)[a-zA-Z0-9\\-\\.]+\\.([a-zA-Z]{2,3}|[0-9]{1,3})(\\]?)$', email):
+                return True
+        return False
 
     def _extract_from_anchors(self, soup):
         return set([a.get('href') or a.text for a in soup.find_all('a')])
@@ -135,27 +136,29 @@ class UrlStatusChecker(object):
 
         return future.result()
 
+
 class UrlValidator(object):
     _extractors = {
-        Filetype.txt: TextUrlExtractor,
-        Filetype.html: HtmlUrlExtractor
+        'txt': TextUrlExtractor,
+        'html': HtmlUrlExtractor
     }
 
     def __init__(self, filetype, **kwargs):
         extractor_class = self._extractors.get(filetype)
         if extractor_class is None:
-            raise MissingValidatorError('there is no validator for filetype %s', filetype)
+            raise MissingUrlExtractorError('no extractor for filetype %s', filetype)
         self.extractor = extractor_class(**kwargs)
 
-    def check(self, paths, parser):
-        flat_paths = set(p for sublist in paths for p in sublist)
+    def check(self, data, parser):
+        flat_data = set(p for sublist in data for p in sublist)
+        # TODO yield instead
         urls = {}
-        for path in flat_paths:
-            content = parser.parse(read_content(path))
+        for element in flat_data:
+            content = parser.parse(element)
             file_urls = self.extractor.extract_urls(content)
             for file_url in file_urls:
-                url = urls.get(file_url, Url(file_url))
-                url.add_file(path)
+                url = urls.get(file_url, UrlDiff(file_url))
+                url.add_file(element)
                 urls[url.url] = url
         checker = UrlStatusChecker()
         invalid_urls = checker.check(urls.values())

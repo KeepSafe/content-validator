@@ -3,14 +3,9 @@ from string import Formatter
 from collections import defaultdict
 from enum import Enum
 import parse
+import logging
 
-
-class Filetype(Enum):
-    txt = 0
-    md = 1
-    xml = 2
-    csv = 3
-    html = 4
+logger = logging.getLogger(__name__)
 
 
 def read_content(path):
@@ -18,7 +13,7 @@ def read_content(path):
         with path.open() as fp:
             return fp.read()
     else:
-        #TODO raise error
+        logger.warn('%s does not exist', path.resolve())
         return ''
 
 
@@ -76,16 +71,20 @@ def _params_pattern(pattern, params, **kwargs):
 
 def files(pattern, **kwargs):
     """
-    Return list of list of `Path <https://docs.python.org/3/library/pathlib.html#pathlib.Path>`_ to files matching the pattern.
+    Return list of list of `Path <https://docs.python.org/3/library/pathlib.html#pathlib.Path>`_ to
+    files matching the pattern.
     In addition of the normal Path.glob syntax the pattern accepts parameters in a form of param ``{param}``.
-    You need to pass a default parameter value for every parameter, path with the default will become the first Path in the list.
-    
+    You need to pass a default parameter value for every parameter, path with the default will become the first
+    Path in the list.
+
     Examples:
-    
+
     explicit pattern: 'path/to/file.txt' will resolve [[Path(path/to/file.txt)]]
     wildcard pattern: 'path/to/*.txt' will resolve [[Path(path/to/file1.txt), Path(path/to/file2.txt)]]
-    parameter pattern, default name=file1: 'path/to/{name}.txt' will resolve [[Path(path/to/file1.txt), Path(path/to/file2.txt)]]
-    parameter wildcard pattern, default name=file1: 'path/*/{name}.txt' will resolve [[Path(path/to1/file1.txt), Path(path/to1/file2.txt)], [Path(path/to2/file1.txt), Path(path/to2/file2.txt)]]
+    parameter pattern, default name=file1: 'path/to/{name}.txt' will resolve
+    [[Path(path/to/file1.txt), Path(path/to/file2.txt)]]
+    parameter wildcard pattern, default name=file1: 'path/*/{name}.txt' will resolve
+    [[Path(path/to1/file1.txt), Path(path/to1/file2.txt)], [Path(path/to2/file1.txt), Path(path/to2/file2.txt)]]
     """
     # extract named parameters from the pattern
     params = [p for p in map(lambda e: e[1], Formatter().parse(pattern)) if p]
