@@ -1,6 +1,6 @@
 import re
 
-from ..errors import MdDiff
+from ..errors import MdDiff, ContentData
 
 ARG_PATTERN = r'%(?:\d+\$)?(?:[a-zA-Z]+)?(?:\d+)?(?:.\d+)?[a-zA-Z]+'
 REF_PATTERN = r'@string/\w+'
