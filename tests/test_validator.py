@@ -106,3 +106,29 @@ class TestText(TestCase):
         t2 = '#bbb\n\nbbb'
         errors = validator.parse().text(t1, t2).check().md().validate()
         self.assertNotEqual([], errors)
+
+
+class TestJava(TestCase):
+    def test_arg_same(self):
+        t1 = 'aaa %1.2s aaa'
+        t2 = 'bbb %1.2s bbb'
+        errors = validator.parse().text(t1, t2).check().java().validate()
+        self.assertEqual([], errors)
+
+    def test_arg_different(self):
+        t1 = 'aaa %1.2s aaa'
+        t2 = 'bbb bbb'
+        errors = validator.parse().text(t1, t2).check().java().validate()
+        self.assertNotEqual([], errors)
+
+    def test_ref_same(self):
+        t1 = '@string/string_name'
+        t2 = '@string/string_name'
+        errors = validator.parse().text(t1, t2).check().java().validate()
+        self.assertEqual([], errors)
+
+    def test_ref_different(self):
+        t1 = '@string/string_name'
+        t2 = '@string/string_name aaa'
+        errors = validator.parse().text(t1, t2).check().java().validate()
+        self.assertNotEqual([], errors)

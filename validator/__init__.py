@@ -3,7 +3,6 @@ from collections import defaultdict
 from pathlib import Path
 from markdown import markdown
 
-from sdiff import renderer, diff
 from . import parsers, checks, reports, fs
 
 
@@ -58,6 +57,10 @@ class CheckBuilder(object):
 
     def url(self, **kwargs):
         self.checks.append(checks.urls(self.content_type, **kwargs))
+        return self
+
+    def java(self):
+        self.checks.append(checks.java_args(self.content_type))
         return self
 
     def report(self):

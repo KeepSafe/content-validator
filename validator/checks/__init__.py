@@ -1,5 +1,6 @@
 from .md import MarkdownComparator
 from .url import UrlValidator
+from .java import JavaComparator
 
 
 class UndefinedCheckTypeError(Exception):
@@ -14,6 +15,12 @@ def markdown(filetype):
     if filetype != 'txt':
         raise UndefinedCheckTypeError('got filetype %s' % filetype)
     return MarkdownComparator()
+
+
+def java_args(filetype):
+    if filetype != 'txt':
+        raise UndefinedCheckTypeError('got filetype %s' % filetype)
+    return JavaComparator()
 
 
 class ChainCheck(object):

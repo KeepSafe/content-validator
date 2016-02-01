@@ -1,5 +1,6 @@
 from collections import namedtuple
 
+
 class UrlDiff(object):
 
     def __init__(self, url, files=None, status_code=200):
