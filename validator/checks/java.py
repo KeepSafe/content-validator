@@ -14,17 +14,25 @@ class JavaComparator(object):
         base_args = self._get_args(base)
         other_args = self._get_args(other)
         if len(base_args) != len(other_args):
-            return MdDiff(base, other, 'java args do not match')
+            base_data = ContentData(base, base, '')
+            other_data = ContentData(other, base, '')
+            return MdDiff(base_data, other_data, 'java args do not match')
         return None
 
     def _ref_check(self, base, other):
         if self._has_ref(base):
             if not self._only_ref(base):
-                return MdDiff(base, other, 'java args do not match')
+                base_data = ContentData(base, base, '')
+                other_data = ContentData(other, base, '')
+                return MdDiff(base_data, other_data, 'java args do not match')
             if not self._only_ref(other):
-                return MdDiff(base, other, 'java args do not match')
+                base_data = ContentData(base, base, '')
+                other_data = ContentData(other, base, '')
+                return MdDiff(base_data, other_data, 'java args do not match')
         elif self._has_ref(other):
-            return MdDiff(base, other, 'java args do not match')
+            base_data = ContentData(base, base, '')
+            other_data = ContentData(other, base, '')
+            return MdDiff(base_data, other_data, 'java args do not match')
         return None
 
     def _only_ref(self, content):
