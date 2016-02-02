@@ -21,7 +21,7 @@ install:
 	$(PYTHON) ./setup.py install
 
 flake:
-	$(FLAKE) event_pipe tests
+	$(FLAKE) adminapp tests
 
 test: flake
 	$(NOSE) -s $(FLAGS)
