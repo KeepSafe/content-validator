@@ -116,12 +116,12 @@ class ConsoleReporter(object):
 
     def report(self, errors):
         for error in errors:
-            if isinstance(error, Url):
+            if isinstance(error, UrlDiff):
                 print('{} returned with code {}'.format(error.url, error.status_code))
                 for path in error.files:
                     print('\t{}'.format(str(path)))
                 print()
-            if isinstance(error, HtmlDiff):
+            if isinstance(error, MdDiff):
                 print('Files are different:\n\t{}\n\t{}\n\n'.format(str(error.base_path), str(error.other_path)))
 
 
@@ -132,11 +132,11 @@ class StoreReporter(object):
 
     def report(self, errors):
         for error in errors:
-            if isinstance(error, Url):
+            if isinstance(error, UrlDiff):
                 self.log.append('%s returned with code %s for files' % (error.url, error.status_code))
                 for path in error.files:
                     self.log.append('\t%s' % str(path))
-            if isinstance(error, HtmlDiff):
+            if isinstance(error, MdDiff):
                 self.log.append('Files are different:\n\t%s\n\t%s\n\n' % (str(error.base_path), str(error.other_path)))
 
 

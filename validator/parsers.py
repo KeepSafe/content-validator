@@ -5,7 +5,8 @@ from .fs import read_content
 
 
 class ParserError(Exception):
-    pass
+    def __init__(self, msg):
+        super().__init__(msg)
 
 
 class FileParser(object):
@@ -32,12 +33,9 @@ class XmlParser(object):
         content = content.strip()
         if not content:
             return ''
-        try:
-            elements = ET.fromstring(content).findall(self.query)
-            text_elements = [element.text.strip() for element in elements]
-            return '\n\n'.join(text_elements)
-        except Exception as e:
-            raise ParserError() from e
+        elements = ET.fromstring(content).findall(self.query)
+        text_elements = [element.text.strip() for element in elements]
+        return '\n\n'.join(text_elements)
 
 
 class CsvParser(object):
@@ -51,6 +49,11 @@ class ChainParser(object):
         self.parsers = parsers
 
     def parse(self, content):
-        for parser in self.parsers:
-            content = parser.parse(content)
-        return content
+        original_content = content
+        try:
+            for parser in self.parsers:
+                content = parser.parse(content)
+            return content
+        except Exception as e:
+            msg = 'error in content %s' % original_content
+            raise ParserError(msg) from e

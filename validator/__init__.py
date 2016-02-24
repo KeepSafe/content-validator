@@ -79,6 +79,10 @@ class ParserBuilder(object):
         self.content_type = 'txt'
         self.parsers = [first_parser]
 
+    def html(self):
+        self.content_type = 'html'
+        return self
+
     def md(self):
         self.content_type = 'html'
         self.parsers.append(parsers.MarkdownParser())
