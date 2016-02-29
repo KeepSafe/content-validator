@@ -1,10 +1,14 @@
+import logging
+import sys
 from enum import Enum
 from collections import defaultdict
 from pathlib import Path
 from markdown import markdown
 
-from . import parsers, checks, reports, fs
+from . import cmd, parsers, checks, reports, fs
 
+
+logger = logging.getLogger()
 
 class Validator(object):
     def __init__(self, contents, parser, check, reporter=None):
@@ -119,3 +123,32 @@ class ContentBuilder(object):
 
 def parse():
     return ContentBuilder()
+
+def validate_formatting(settings):
+    errors = parse().files(settings.source, lang=settings.base_locale).xml(
+    query='.//string').check().md().validate()
+    
+    if errors:
+        logger.info('Errors: %d' % len(errors))
+        report_uri = reports.HtmlSummaryReporter(settings.output).report(errors).uri_path
+        logger.info('See %s' % report_uri)
+        return False
+    else:
+        return True
+
+def init_log(verbose):
+    log_level = logging.DEBUG if verbose else logging.INFO
+    handler = logging.StreamHandler(sys.stderr)
+    logger.setLevel(log_level)
+    logger.addHandler(handler)
+
+
+def main():
+    args = cmd.read_args()
+    if args.version:
+        result = cmd.print_version()
+    else:
+        settings = cmd.read_settings(args)
+        init_log(settings.verbose)
+        valid = validate_formatting(settings)
+        sys.exit(0) if not valid else sys.exit(1)

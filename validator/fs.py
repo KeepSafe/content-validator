@@ -1,4 +1,5 @@
 from pathlib import Path
+import os
 from string import Formatter
 from collections import defaultdict
 from enum import Enum
@@ -26,6 +27,15 @@ def save_report(directory, source_path, report):
     with path.open('w') as fp:
         fp.write(report)
 
+def save_summary_report(filepath, content):
+    path = Path(filepath)
+    try:
+        path.parent.mkdir(parents=True)
+    except FileExistsError:
+        pass
+    with path.open('w') as fp:
+        fp.write(content)
+    return Path(os.path.abspath(filepath)).as_uri()
 
 def _no_params_pattern(pattern):
     yield list(Path().glob(pattern))
