@@ -44,3 +44,9 @@ class MarkdownComparator(object):
                     # TODO horrible
                     errors.append(MdDiff(base_data, other_data, error_msgs))
         return errors
+
+    def get_broken_links(self, base, other):
+        base_links = re.findall(LINK_RE, base)
+        other_links = re.findall(LINK_RE, other.replace('\u200e', ''))
+        broken_links = set(other_links) - set(base_links)
+        return broken_links
