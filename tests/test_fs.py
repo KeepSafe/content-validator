@@ -45,8 +45,16 @@ class TestPaths(TestCase):
 
     def test_wildcard_recursive_with_parameter(self):
         expected = [
-            [Path('tests/fixtures/lang/en/test1.md'), Path('tests/fixtures/lang/en/test2.md')],
-            [Path('tests/fixtures/lang/de/test1.md'), Path('tests/fixtures/lang/de/test2.md')]
+            [
+                Path('tests/fixtures/lang/en/test1.md'),
+                Path('tests/fixtures/lang/en/test2.md'),
+                Path('tests/fixtures/lang/en/test3.md')
+            ],
+            [
+                Path('tests/fixtures/lang/de/test1.md'),
+                Path('tests/fixtures/lang/de/test2.md'),
+                Path('tests/fixtures/lang/de/test3.md')
+            ],
         ]
 
         actual = list(files('tests/fixtures/lang/**/{order}.md', order='test1'))

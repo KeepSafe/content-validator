@@ -30,3 +30,7 @@ class TestMarkdownComparator(TestCase):
         self.assertEqual('dummy_path1', diff.base.original)
         self.assertEqual('dummy_path2', diff.other.original)
         self.assertNotEqual([], diff.error_msgs)
+
+    def test_markdown_broken_url(self):
+        diffs = self._test_markdown('tests/fixtures/lang/en/test3.md', 'tests/fixtures/lang/de/test3.md')
+        self.assertEqual(1, len(diffs))
