@@ -18,14 +18,14 @@ class TestPaths(TestCase):
 
         actual = list(files('tests/fixtures/flat/*.txt'))
 
-        self.assertEqual(expected, actual)
+        self.assertEqual(set(*expected), set(*actual))
 
     def test_recursive(self):
         expected = [[Path('tests/fixtures/lang/de/test1.md'), Path('tests/fixtures/lang/en/test1.md')]]
 
         actual = list(files('tests/fixtures/lang/**/test1.md'))
 
-        self.assertEqual(expected, actual)
+        self.assertEqual(set(*expected), set(*actual))
 
     def test_simple_with_parameter(self):
         expected = [[Path('tests/fixtures/flat/test.en.txt'), Path('tests/fixtures/flat/test.fr.txt')]]
