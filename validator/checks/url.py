@@ -5,7 +5,6 @@ import aiohttp
 import string
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse, urljoin
-from collections import defaultdict
 
 from ..errors import UrlDiff
 

@@ -1,10 +1,8 @@
 from bs4 import BeautifulSoup
-import logging
-import sys
 import shutil
 import markdown
 
-from .fs import save_report, read_content
+from .fs import save_report
 from .errors import UrlDiff, MdDiff
 
 
@@ -39,9 +37,12 @@ class HtmlReporter(object):
         <h3>KeepSafe's validation tool has found some problems with the translation</h3>
         <p>
             The elements on the left show the reference text, the elements on the right the translation.<br />
-            The elements that are missing are highlighted in green, the ones which are unnecessary are highlighted in red. <br />
-            The tool is not always 100% accurate, sometimes it might show things that are correct as errors if there are other errors in the text. <br />
-            Please correct the errors you can find first. If you think the text is correct and the tool is still showing errors please contact KeepSafe's employee.
+            The elements that are missing are highlighted in green,
+            the ones which are unnecessary are highlighted in red. <br />
+            The tool is not always 100% accurate, sometimes it might show things
+            that are correct as errors if there are other errors in the text. <br />
+            Please correct the errors you can find first.
+            If you think the text is correct and the tool is still showing errors please contact KeepSafe's employee.
         </p>
     </div>
 

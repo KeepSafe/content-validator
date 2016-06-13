@@ -64,7 +64,7 @@ class TestReporter(TestCase):
         shutil.rmtree(self.output_dir)
 
     def test_report_saved(self):
-        errors = validator \
+        validator \
             .parse() \
             .files('tests/fixtures/lang/{lang}/test2.md', lang='en') \
             .check() \

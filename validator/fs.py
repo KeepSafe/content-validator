@@ -1,7 +1,6 @@
 from pathlib import Path
 from string import Formatter
 from collections import defaultdict
-from enum import Enum
 import parse
 import logging
 
