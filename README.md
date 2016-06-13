@@ -5,7 +5,7 @@ Content validator looks at text content and preforms different validation tasks.
 
 ## Requirements
 
-1. Python 2.7.+
+1. Python 3.4.+
 
 ## Installation
 
@@ -45,7 +45,7 @@ The xml parser takes additional parameter `query` used to extract the tags. You 
 Available parsers types:
 
 * `Filetype.txt` - simply reads the file
-* `Filetype.md` - converts markdown to 
+* `Filetype.md` - converts markdown to
 * `Filetype.xml` - extracts text from xml and concatenates
 * `Filetype.csv` - puts every value on a separate line
 

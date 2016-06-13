@@ -21,7 +21,7 @@ install:
 	$(PYTHON) ./setup.py install
 
 flake:
-	$(FLAKE) adminapp tests
+	$(FLAKE) validator tests
 
 test: flake
 	$(NOSE) -s $(FLAGS)
