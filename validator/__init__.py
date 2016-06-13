@@ -1,7 +1,4 @@
-from enum import Enum
-from collections import defaultdict
 from pathlib import Path
-from markdown import markdown
 
 from . import parsers, checks, reports, fs
 

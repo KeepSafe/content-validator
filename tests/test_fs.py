@@ -1,5 +1,4 @@
 from unittest import TestCase
-from unittest.mock import patch
 from pathlib import Path
 
 from validator.fs import files
@@ -27,7 +26,6 @@ class TestPaths(TestCase):
         actual = list(files('tests/fixtures/lang/**/test1.md'))
 
         self.assertEqual(expected, actual)
-
 
     def test_simple_with_parameter(self):
         expected = [[Path('tests/fixtures/flat/test.en.txt'), Path('tests/fixtures/flat/test.fr.txt')]]

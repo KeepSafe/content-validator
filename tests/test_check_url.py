@@ -1,4 +1,3 @@
-from unittest import TestCase
 from unittest.mock import patch, MagicMock
 from . import AsyncTestCase
 
@@ -61,61 +60,61 @@ class TestTxt(AsyncTestCase):
 
     @patch('aiohttp.request')
     def test_retry_for_server_error(self, mock_get):
-        errors = self._check(mock_get, 'aaa http://www.google.com aaa', 500)
+        self._check(mock_get, 'aaa http://www.google.com aaa', 500)
 
         self.assertEqual(3, mock_get.call_count)
 
     @patch('aiohttp.request')
     def test_make_only_one_request_per_unique_url(self, mock_get):
-        errors = self._check(mock_get, 'aaa http://www.google.com aaa http://www.google.com aaa', 200)
+        self._check(mock_get, 'aaa http://www.google.com aaa http://www.google.com aaa', 200)
 
         self.assertEqual(1, mock_get.call_count)
 
     @patch('aiohttp.request')
     def test_skip_parameterized_urls_in_middle(self, mock_get):
-        errors = self._check(mock_get, 'aaa http://domain.com/{{param}} aaa', 200)
+        self._check(mock_get, 'aaa http://domain.com/{{param}} aaa', 200)
 
         self.assertFalse(mock_get.called)
 
     @patch('aiohttp.request')
     def test_skip_parameterized_urls_from_start(self, mock_get):
-        errors = self._check(mock_get, 'aaa http://{{ticket.url}}, aaa', 200)
+        self._check(mock_get, 'aaa http://{{ticket.url}}, aaa', 200)
 
         self.assertFalse(mock_get.called)
 
     @patch('aiohttp.request')
     def test_include_params_in_the_url(self, mock_get):
-        errors = self._check(mock_get, 'aaa http://domain.com/hello?id=123 aaa', 200)
+        self._check(mock_get, 'aaa http://domain.com/hello?id=123 aaa', 200)
 
         mock_get.assert_called_with('get', 'http://domain.com/hello?id=123')
 
     @patch('aiohttp.request')
     def test_skip_empty_urls(self, mock_get):
-        errors = self._check(mock_get, 'aaa http:// aaa', 200)
+        self._check(mock_get, 'aaa http:// aaa', 200)
 
         self.assertFalse(mock_get.called)
 
     @patch('aiohttp.request')
     def test_skip_email(self, mock_get):
-        errors = self._check(mock_get, 'aaa support@getkeepsafe.com aaa', 200)
+        self._check(mock_get, 'aaa support@getkeepsafe.com aaa', 200)
 
         self.assertFalse(mock_get.called)
 
     @patch('aiohttp.request')
     def test_skip_commas(self, mock_get):
-        errors = self._check(mock_get, 'aaa http://{{ticket.url}}, aaa', 404)
+        self._check(mock_get, 'aaa http://{{ticket.url}}, aaa', 404)
 
         self.assertFalse(mock_get.called)
 
     @patch('aiohttp.request')
-    def test_skip_commas(self, mock_get):
-        errors = self._check(mock_get, 'aaa http://www.google.com, aaa', 200)
+    def test_skip_commas_url(self, mock_get):
+        self._check(mock_get, 'aaa http://www.google.com, aaa', 200)
 
         mock_get.assert_called_with('get', 'http://www.google.com')
 
     @patch('aiohttp.request')
-    def test_skip_commas(self, mock_get):
-        errors = self._check(mock_get, 'aaa http://bit.ly/UpdateKeepSafe。拥有最新版本就能解决大部分问题了。 aaa', 200)
+    def test_skip_chineese_commas(self, mock_get):
+        self._check(mock_get, 'aaa http://bit.ly/UpdateKeepSafe。拥有最新版本就能解决大部分问题了。 aaa', 200)
 
         mock_get.assert_called_with('get', 'http://bit.ly/UpdateKeepSafe')
 
@@ -157,31 +156,31 @@ class TestHtml(AsyncTestCase):
 
     @patch('aiohttp.request')
     def test_image(self, mock_get):
-        errors = self._check(mock_get, '<img src="http://www.google.com">', 200)
+        self._check(mock_get, '<img src="http://www.google.com">', 200)
 
         self.assertTrue(mock_get.called)
 
     @patch('aiohttp.request')
     def test_skip_request_parameterized_urls(self, mock_get):
-        errors = self._check(mock_get, '<a href="{{url}}">link</a>', 200)
+        self._check(mock_get, '<a href="{{url}}">link</a>', 200)
 
         self.assertFalse(mock_get.called)
 
     @patch('aiohttp.request')
     def test_skip_empty_urls(self, mock_get):
-        errors = self._check(mock_get, '<a href=""></a>', 200)
+        self._check(mock_get, '<a href=""></a>', 200)
 
         self.assertFalse(mock_get.called)
 
     @patch('aiohttp.request')
     def test_skip_email(self, mock_get):
-        errors = self._check(mock_get, '<a href="support@getkeepsafe.com"></a>', 200)
+        self._check(mock_get, '<a href="support@getkeepsafe.com"></a>', 200)
 
         self.assertFalse(mock_get.called)
 
     @patch('aiohttp.request')
     def test_skip_images(self, mock_get):
         check = url.UrlValidator('html', skip_images=True)
-        errors = self._check(mock_get, '<img alt="image" src="http://no-image" />', 200, check)
+        self._check(mock_get, '<img alt="image" src="http://no-image" />', 200, check)
 
         self.assertFalse(mock_get.called)
