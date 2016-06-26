@@ -2,6 +2,7 @@ import re
 from sdiff import diff, renderer
 
 from ..errors import MdDiff, ContentData
+from ..fs import read_content
 
 LINK_RE = r'\]\(([^\)]+)\)'
 
@@ -9,6 +10,13 @@ LINK_RE = r'\]\(([^\)]+)\)'
 def save_file(content, filename):
     with open(filename, 'w') as fp:
         fp.write(content)
+
+
+def get_content(path, parser):
+    if str(path)[-4:1] == '.xml':
+        return parser.parse(path)
+    else:
+        return read_content(path)
 
 
 class MarkdownComparator(object):
@@ -21,9 +29,9 @@ class MarkdownComparator(object):
         errors = []
         for row in data:
             base = row.pop(0)
-            base_content = parser.parse(base)
+            base_content = get_content(base, parser)
             for other in row:
-                other_content = parser.parse(other)
+                other_content = get_content(other, parser)
                 other_diff, base_diff, error = diff(other_content, base_content, renderer=renderer.HtmlRenderer())
                 broken_links = self.get_broken_links(base_content, other_content)
                 if error or broken_links:

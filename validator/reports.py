@@ -110,7 +110,9 @@ class HtmlReporter(object):
                 report_soup = self._add_content(report_soup, 'left_diff', BeautifulSoup(error.base.diff).body)
                 report_soup = self._add_content(report_soup, 'right_diff', BeautifulSoup(error.other.diff).body)
                 report_soup = self._add_content(report_soup, 'error_msgs', BeautifulSoup(error_msgs).body)
-            save_report(self.output_directory, error.other.original, report_soup.prettify())
+            target_path = error.other.original
+            target_path = target_path.__class__(str(target_path).replace('../',''))
+            save_report(self.output_directory, target_path, report_soup.prettify())
 
 
 class ConsoleReporter(object):
