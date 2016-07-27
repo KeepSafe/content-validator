@@ -89,11 +89,14 @@ class HtmlUrlExtractor(TextUrlExtractor):
 class UrlStatusChecker(object):
     retry_max_count = 3
 
+    def __init__(self, headers={}):
+        self._headers = headers
+
     def _make_request(self, url):
         res = None
         try:
             logging.info('checking {}'.format(url))
-            res = yield from aiohttp.request('get', url)
+            res = yield from aiohttp.request('get', url, headers=self._headers)
             return res.status
         except Exception:
             logging.error('Error making request to %s', url)
@@ -142,7 +145,8 @@ class UrlValidator(object):
         'html': HtmlUrlExtractor
     }
 
-    def __init__(self, filetype, **kwargs):
+    def __init__(self, filetype, headers={}, **kwargs):
+        self.client_headers = headers
         extractor_class = self._extractors.get(filetype)
         if extractor_class is None:
             raise MissingUrlExtractorError('no extractor for filetype %s', filetype)
@@ -159,6 +163,6 @@ class UrlValidator(object):
                 url = urls.get(file_url, UrlDiff(file_url))
                 url.add_file(element)
                 urls[url.url] = url
-        checker = UrlStatusChecker()
+        checker = UrlStatusChecker(headers=self.client_headers)
         invalid_urls = checker.check(urls.values())
         return invalid_urls
