@@ -17,7 +17,8 @@ def read_content(path):
 
 
 def save_report(directory, source_path, report):
-    path = Path(directory).joinpath(source_path.with_suffix('.html'))
+    rel_path = Path(str(source_path).replace('../', ''))
+    path = Path(directory).joinpath(rel_path.with_suffix('.html'))
     try:
         path.parent.mkdir(parents=True)
     except FileExistsError:
