@@ -25,15 +25,15 @@ class MarkdownComparator(object):
             for other in row:
                 other_content = parser.parse(other)
                 other_diff, base_diff, error = diff(other_content, base_content, renderer=renderer.HtmlRenderer())
-                broken_links = self.get_broken_links(base_content, other_content)
-                if error or broken_links:
+                # broken_links = self.get_broken_links(base_content, other_content)
+                if error:
                     error_msgs = []
                     if error:
                         error_msgs = map(lambda e: e.message, error)
-                    if broken_links:
-                        error_msgs = list(error_msgs) + ['There is broken link `%s`' % link for link in broken_links]
-                        for link in broken_links:
-                            other_diff = other_content.replace(link, '<del>%s</del>' % link)
+                    # if broken_links:
+                    #     error_msgs = list(error_msgs) + ['There is broken link `%s`' % link for link in broken_links]
+                    #     for link in broken_links:
+                    #         other_diff = other_content.replace(link, '<del>%s</del>' % link)
 
                     base_data = ContentData(base, base_content, base_diff)
                     other_data = ContentData(other, other_content, other_diff)
