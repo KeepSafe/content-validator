@@ -3,19 +3,20 @@ from collections import namedtuple
 
 class UrlDiff(object):
 
-    def __init__(self, url, files=None, status_code=200):
+    def __init__(self, url, files=None, status_code=200, has_disallowed_chars=False):
         self.url = url
         self.files = files or []
         self.status_code = status_code
+        self.has_disallowed_chars = has_disallowed_chars
 
     def __str__(self):
-        return 'Url(%s, %s, %s)' % (self.url, self.files, self.status_code)
+        return 'Url(%s, %s, %s, %s)' % (self.url, self.files, self.status_code, self.has_disallowed_chars)
 
     def __repr__(self):
         return 'Url: %s' % self.url
 
     def is_valid(self):
-        return 200 <= self.status_code < 300
+        return 200 <= self.status_code < 300 and not self.has_disallowed_chars
 
     def add_file(self, path):
         self.files.append(path)

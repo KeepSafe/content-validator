@@ -157,6 +157,13 @@ class TestHtml(AsyncTestCase):
         self.assertEqual([], errors)
 
     @patch('aiohttp.request')
+    def test_url_with_unaccepted_chars(self, mock_get):
+        errors = self._check(mock_get, '<a>http://www.google.com/\u200e?asd</a>', 200)
+
+        self.assertEqual(1, len(errors))
+        self.assertEqual(True, errors[0].has_disallowed_chars)
+
+    @patch('aiohttp.request')
     def test_add_http_if_missing(self, mock_get):
         errors = self._check(mock_get, '<a href="www.google.com">link</a>', 200)
 

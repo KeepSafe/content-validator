@@ -119,13 +119,17 @@ class UrlStatusChecker(object):
             return (yield from self._retry_request(url, status))
         return status
 
-    def _is_valid(self, status_code):
-        return 200 <= status_code < 300
+    def _has_disallowed_chars(self, url):
+        return url.find('\u200e') != -1
+
+    def _is_valid(self, status_code, has_disallowed_chars):
+        return (200 <= status_code < 300) and not has_disallowed_chars
 
     @asyncio.coroutine
     def _check_urls_coro(self, urls, future):
         for url in urls:
             url.status_code = yield from self._request_status_code(url.url)
+            url.has_disallowed_chars = self._has_disallowed_chars(url.url)
         invalid_urls = filter(lambda u: not u.is_valid(), urls)
         future.set_result(list(invalid_urls))
 
