@@ -132,3 +132,16 @@ class TestJava(TestCase):
         t2 = '@string/string_name aaa'
         errors = validator.parse().text(t1, t2).check().java().validate()
         self.assertNotEqual([], errors)
+
+    def test_ref_nonstring_args(self):
+        t1 = None
+        t2 = '@string/string_name aaa'
+        errors = validator.parse().text(t1, t2).check().java().validate()
+        self.assertNotEqual([], errors)
+        errors = validator.parse().text(t2, t1).check().java().validate()
+        self.assertNotEqual([], errors)
+
+    def test_noniterable_check_args(self):
+        java_comparator_inst = validator.checks.JavaComparator()
+        errors = java_comparator_inst.check(None, validator.parsers.TxtParser())
+        self.assertEqual([], errors)
