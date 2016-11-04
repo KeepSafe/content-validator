@@ -46,24 +46,12 @@ class TestPaths(TestCase):
         self.assertEqual(expected, actual)
 
     def test_wildcard_recursive_with_parameter(self):
-        expected = [
-            [
-                Path('tests/fixtures/lang/en/test1.md'),
-                Path('tests/fixtures/lang/en/test2.md'),
-                Path('tests/fixtures/lang/en/test3.md')
-            ],
-            [
-                Path('tests/fixtures/lang/de/test1.md'),
-                Path('tests/fixtures/lang/de/test2.md'),
-                Path('tests/fixtures/lang/de/test3.md')
-            ],
-        ]
-
         actual = list(
             files('tests/fixtures/lang/**/{order}.md', order='test1'))
 
-        self.assertCountEqual(expected[0], actual[0])
-        self.assertCountEqual(expected[1], actual[1])
+        self.assertEqual(2, len(actual))
+        self.assertEqual(3, len(actual[0]))
+        self.assertEqual(3, len(actual[1]))
 
     def test_two_parameters(self):
         expected = [[Path('tests/fixtures/lang/en/test1.md'),
