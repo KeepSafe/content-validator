@@ -42,13 +42,13 @@ class JavaComparator(object):
         return re.search(REF_PATTERN, content) is not None
 
     def check(self, data, parser):
-        if not data:
-            return []
+        data = data or []
         errors = []
         for row in data:
-            base = row.pop(0)
+            row_items = list(map(str, row))
+            base = row_items.pop(0)
             base_content = parser.parse(base)
-            for other in row:
+            for other in row_items:
                 other_content = parser.parse(other)
                 ref_error = self._ref_check(base_content, other_content)
                 if ref_error:
