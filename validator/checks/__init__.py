@@ -12,7 +12,7 @@ def urls(filetype, **kwargs):
 
 
 def markdown(filetype):
-    if filetype != 'txt':
+    if filetype not in ['txt', 'html']:
         raise UndefinedCheckTypeError('got filetype %s' % filetype)
     return MarkdownComparator()
 
@@ -27,9 +27,9 @@ class ChainCheck(object):
     def __init__(self, checks):
         self.checks = checks
 
-    def check(self, contents, parser):
+    def check(self, contents, parser, reader):
         errors = []
         for check in self.checks:
-            check_errors = check.check(contents, parser)
+            check_errors = check.check(contents, parser, reader)
             errors.extend(check_errors)
         return errors

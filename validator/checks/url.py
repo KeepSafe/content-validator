@@ -8,7 +8,6 @@ from urllib.parse import urlparse, urljoin
 
 from ..errors import UrlDiff
 
-
 logging.getLogger('aiohttp').setLevel(logging.ERROR)
 logging.getLogger('asyncio').setLevel(logging.ERROR)
 
@@ -18,7 +17,6 @@ class MissingUrlExtractorError(Exception):
 
 
 class TextUrlExtractor(object):
-
     def __init__(self, **kwargs):
         pass
 
@@ -38,7 +36,6 @@ class TextUrlExtractor(object):
 
 
 class HtmlUrlExtractor(TextUrlExtractor):
-
     def __init__(self, root_url='', skip_images=False, **kwargs):
         self.root_url = root_url
         self.skip_images = skip_images
@@ -144,10 +141,7 @@ class UrlStatusChecker(object):
 
 
 class UrlValidator(object):
-    _extractors = {
-        'txt': TextUrlExtractor,
-        'html': HtmlUrlExtractor
-    }
+    _extractors = {'txt': TextUrlExtractor, 'html': HtmlUrlExtractor}
 
     def __init__(self, filetype, headers={}, **kwargs):
         self.client_headers = headers
@@ -156,12 +150,12 @@ class UrlValidator(object):
             raise MissingUrlExtractorError('no extractor for filetype %s', filetype)
         self.extractor = extractor_class(**kwargs)
 
-    def check(self, data, parser):
+    def check(self, data, parser, reader):
         flat_data = set(p for sublist in data for p in sublist)
         # TODO yield instead
         urls = {}
         for element in flat_data:
-            content = parser.parse(element)
+            content = parser.parse(reader.read(element))
             file_urls = self.extractor.extract_urls(content)
             for file_url in file_urls:
                 url = urls.get(file_url, UrlDiff(file_url))

@@ -10,7 +10,6 @@ import validator
 
 
 class TestUrls(AsyncTestCase):
-
     def _test_plain_text(self):
         return validator.parse().files('tests/fixtures/flat/test.en.txt').check().url().validate()
 
@@ -37,26 +36,21 @@ class TestUrls(AsyncTestCase):
 
 
 class TestMarkdown(TestCase):
-
     def test_markdown_same_structure(self):
         errors = validator.parse().files('tests/fixtures/lang/{lang}/test1.md', lang='en').check().md().validate()
-
         self.assertEqual([], errors)
 
     def test_markdown_different_structure(self):
         errors = validator.parse().files('tests/fixtures/lang/{lang}/test2.md', lang='en').check().md().validate()
-
         self.assertNotEqual([], errors)
 
     def test_markdown_single(self):
-        errors = validator.parse().file(
-            'tests/fixtures/lang/en/test1.md', 'tests/fixtures/lang/en/test1.md').check().md().validate()
-
+        errors = validator.parse().file('tests/fixtures/lang/en/test1.md',
+                                        'tests/fixtures/lang/en/test1.md').check().md().validate()
         self.assertEqual([], errors)
 
 
 class TestReporter(TestCase):
-
     def setUp(self):
         self.output_dir = tempfile.mkdtemp()
 
@@ -77,7 +71,6 @@ class TestReporter(TestCase):
 
 
 class TestBugs(TestCase):
-
     def _run_and_assert(self, query, **kwargs):
         errors = validator.parse().files(query, **kwargs).md().check().url().validate()
 
@@ -94,7 +87,6 @@ class TestBugs(TestCase):
 
 
 class TestText(TestCase):
-
     def test_same(self):
         t1 = '##aaa\n\naaa'
         t2 = '##bbb\n\nbbb'
@@ -143,5 +135,5 @@ class TestJava(TestCase):
 
     def test_noniterable_check_args(self):
         java_comparator_inst = validator.checks.JavaComparator()
-        errors = java_comparator_inst.check(None, validator.parsers.TxtParser())
+        errors = java_comparator_inst.check(None, validator.parsers.ChainParser([]), validator.parsers.TxtReader())
         self.assertEqual([], errors)

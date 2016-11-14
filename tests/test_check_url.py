@@ -5,7 +5,6 @@ from validator.checks import url
 
 
 class TestTxtExtractor(AsyncTestCase):
-
     def setUp(self):
         super().setUp()
         self.extractor = url.TextUrlExtractor()
@@ -33,6 +32,7 @@ class TestTxt(AsyncTestCase):
         super().setUp()
         self.check = url.UrlValidator('txt')
         self.parser = MagicMock()
+        self.reader = MagicMock()
 
     def _check(self, mock_get, content, status_code):
         self.parser.parse.return_value = content
@@ -40,7 +40,7 @@ class TestTxt(AsyncTestCase):
         res.status = status_code
         mock_get.return_value = self.make_fut(res)
 
-        return self.check.check([['dummy_path']], self.parser)
+        return self.check.check([['dummy_path']], self.parser, self.reader)
 
     @patch('aiohttp.request')
     def test_happy_path(self, mock_get):
@@ -128,11 +128,11 @@ class TestTxt(AsyncTestCase):
 
 
 class TestHtml(AsyncTestCase):
-
     def setUp(self):
         super().setUp()
         self.check = url.UrlValidator('html')
         self.parser = MagicMock()
+        self.reader = MagicMock()
 
     def _check(self, mock_get, content, status_code, check=None):
         check = check or self.check
@@ -141,7 +141,7 @@ class TestHtml(AsyncTestCase):
         res.status = status_code
         mock_get.return_value = self.make_fut(res)
 
-        return check.check(['dummy_path'], self.parser)
+        return check.check(['dummy_path'], self.parser, self.reader)
 
     @patch('aiohttp.request')
     def test_happy_path(self, mock_get):

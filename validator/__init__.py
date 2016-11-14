@@ -1,26 +1,26 @@
-from pathlib import Path
-
 from . import parsers, checks, reports, fs
 
 
 class Validator(object):
-    def __init__(self, contents, parser, check, reporter=None):
+    def __init__(self, contents, parser, reader, check, reporter=None):
         self.contents = contents
         self.parser = parser
+        self.reader = reader
         self.check = check
         self.reporter = reporter
 
     def validate(self):
-        errors = self.check.check(self.contents, self.parser)
+        errors = self.check.check(self.contents, self.parser, self.reader)
         if self.reporter is not None:
             self.reporter.report(errors)
         return errors
 
 
 class ReportBuilder(object):
-    def __init__(self, contents, parser, check):
+    def __init__(self, contents, parser, reader, check):
         self.contents = contents
         self.parser = parser
+        self.reader = reader
         self.check = check
         self.reporters = []
 
@@ -38,14 +38,15 @@ class ReportBuilder(object):
 
     def validate(self):
         reporter = reports.ChainReporter(self.reporters)
-        return Validator(self.contents, self.parser, self.check, reporter).validate()
+        return Validator(self.contents, self.parser, self.reader, self.check, reporter).validate()
 
 
 class CheckBuilder(object):
-    def __init__(self, contents, content_type, parser):
+    def __init__(self, contents, content_type, parser, reader):
         self.contents = contents
         self.content_type = content_type
         self.parser = parser
+        self.reader = reader
         self.checks = []
 
     def md(self):
@@ -62,19 +63,20 @@ class CheckBuilder(object):
 
     def report(self):
         check = checks.ChainCheck(self.checks)
-        return ReportBuilder(self.contents, self.parser, check)
+        return ReportBuilder(self.contents, self.parser, self.reader, check)
 
     def validate(self):
         check = checks.ChainCheck(self.checks)
-        return Validator(self.contents, self.parser, check).validate()
+        return Validator(self.contents, self.parser, self.reader, check).validate()
 
 
 class ParserBuilder(object):
-    def __init__(self, contents, first_parser):
+    def __init__(self, contents, reader=None):
         self.contents = contents
         # TODO use enum
         self.content_type = 'txt'
-        self.parsers = [first_parser]
+        self.reader = reader or parsers.TxtReader()
+        self.parsers = []
 
     def html(self):
         self.content_type = 'html'
@@ -97,25 +99,25 @@ class ParserBuilder(object):
 
     def check(self):
         parser = parsers.ChainParser(self.parsers)
-        return CheckBuilder(self.contents, self.content_type, parser)
+        return CheckBuilder(self.contents, self.content_type, parser, self.reader)
 
 
 class ContentBuilder(object):
     def files(self, pattern, **kwargs):
         contents = fs.files(pattern, **kwargs)
-        return ParserBuilder(contents, parsers.FileParser())
+        return ParserBuilder(contents, parsers.FileReader())
 
     def file(self, base_path, other_path):
-        contents = [[Path(base_path), Path(other_path)]]
-        return ParserBuilder(contents, parsers.FileParser())
+        contents = fs.file(base_path, other_path)
+        return ParserBuilder(contents, parsers.FileReader())
 
     def texts(self, contents):
         contents = [contents]
-        return ParserBuilder(contents, parsers.TxtParser())
+        return ParserBuilder(contents)
 
     def text(self, base, other):
         contents = [[base, other]]
-        return ParserBuilder(contents, parsers.TxtParser())
+        return ParserBuilder(contents)
 
 
 def parse():

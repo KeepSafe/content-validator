@@ -41,15 +41,15 @@ class JavaComparator(object):
     def _has_ref(self, content):
         return re.search(REF_PATTERN, content) is not None
 
-    def check(self, data, parser):
+    def check(self, data, parser, reader):
         data = data or []
         errors = []
         for row in data:
             row_items = list(map(str, row))
             base = row_items.pop(0)
-            base_content = parser.parse(base)
+            base_content = parser.parse(reader.read(base))
             for other in row_items:
-                other_content = parser.parse(other)
+                other_content = parser.parse(reader.read(other))
                 ref_error = self._ref_check(base_content, other_content)
                 if ref_error:
                     errors.append(ref_error)

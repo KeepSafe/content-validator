@@ -94,3 +94,10 @@ def files(pattern, **kwargs):
         return _params_pattern(pattern, params, **kwargs)
     else:
         return _no_params_pattern(pattern)
+
+
+def file(base_path, other_path):
+    """
+    Returnes a single file
+    """
+    return [[Path(base_path), Path(other_path)]]
