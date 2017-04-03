@@ -201,7 +201,9 @@ class TestHtml(AsyncTestCase):
 
     @patch('aiohttp.request')
     def test_skip_keepsafe_urls(self, mock_get):
-        errors = self._check(mock_get, '<a href="keepsafe://access.getkeepsafe.com/upgrade/email-premium-hint"></a>', 200)
+        errors = self._check(mock_get,
+                             '<a href="keepsafe://access.getkeepsafe.com/upgrade/email-premium-hint"></a>',
+                             200)
 
         self.assertFalse(mock_get.called)
         self.assertEqual([], errors)
