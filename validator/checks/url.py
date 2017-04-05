@@ -3,6 +3,7 @@ import logging
 import asyncio
 import aiohttp
 import string
+import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse, urljoin
 
@@ -90,17 +91,26 @@ class UrlStatusChecker(object):
         self._headers = headers
 
     def _make_request(self, url):
+        status = None
         res = None
         try:
             logging.info('checking {}'.format(url))
             res = yield from aiohttp.request('get', url, headers=self._headers)
-            return res.status
+            status = res.status
         except Exception:
             logging.error('Error making request to %s', url)
-            return 500
         finally:
             if res:
                 res.close()
+
+        if not status:
+            try:
+                logging.info('backup checking {}'.format(url))
+                status = requests.get(url).status_code
+            except Exception:
+                logging.error('Error making backup request to %s', url)
+                status = 500
+        return status
 
     def _retry_request(self, url, status):
         new_status = status
