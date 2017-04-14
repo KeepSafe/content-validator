@@ -119,6 +119,12 @@ class TestTxt(AsyncTestCase):
         mock_get.assert_called_with('get', 'http://bit.ly/UpdateKeepSafe', headers={})
 
     @patch('aiohttp.request')
+    def test_skip_keepsafe_urls(self, mock_get):
+        self._check(mock_get, 'aaa keepsafe://access.getkeepsafe.com/upgrade/email-premium-hint aaa', 200)
+
+        self.assertFalse(mock_get.called)
+
+    @patch('aiohttp.request')
     def test_check_headers(self, mock_get):
         headers = {'User-Agent': 'Keepsafe'}
         self.check = url.UrlValidator('txt', headers=headers)
@@ -192,6 +198,15 @@ class TestHtml(AsyncTestCase):
         self._check(mock_get, '<a href="support@getkeepsafe.com"></a>', 200)
 
         self.assertFalse(mock_get.called)
+
+    @patch('aiohttp.request')
+    def test_skip_keepsafe_urls(self, mock_get):
+        errors = self._check(mock_get,
+                             '<a href="keepsafe://access.getkeepsafe.com/upgrade/email-premium-hint"></a>',
+                             200)
+
+        self.assertFalse(mock_get.called)
+        self.assertEqual([], errors)
 
     @patch('aiohttp.request')
     def test_skip_images(self, mock_get):

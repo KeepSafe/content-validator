@@ -3,6 +3,7 @@ import logging
 import asyncio
 import aiohttp
 import string
+import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse, urljoin
 
@@ -20,7 +21,7 @@ class TextUrlExtractor(object):
     def __init__(self, **kwargs):
         pass
 
-    url_pattern = r'(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()\[\]<>]' \
+    url_pattern = r'(?i)\b((?:https?://|www\d{0,3}[.]|(!keepsafe://)[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()\[\]<>]' \
         '+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[' \
         '\];:\'".,<>?\xab\xbb\u201c\u201d\u2018\u2019]))'
 
@@ -90,17 +91,26 @@ class UrlStatusChecker(object):
         self._headers = headers
 
     def _make_request(self, url):
+        status = None
         res = None
         try:
             logging.info('checking {}'.format(url))
             res = yield from aiohttp.request('get', url, headers=self._headers)
-            return res.status
+            status = res.status
         except Exception:
             logging.error('Error making request to %s', url)
-            return 500
         finally:
             if res:
                 res.close()
+
+        if not status:
+            try:
+                logging.info('backup checking {}'.format(url))
+                status = requests.get(url).status_code
+            except Exception:
+                logging.error('Error making backup request to %s', url)
+                status = 500
+        return status
 
     def _retry_request(self, url, status):
         new_status = status
