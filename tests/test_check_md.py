@@ -16,7 +16,7 @@ class TestMarkdownComparator(TestCase):
         self.check = md.MarkdownComparator()
 
     def _test_markdown(self, path1, path2):
-        self.parser.parse.side_effect = iter(['dummy_path1', 'dummy_path2'])
+        self.parser.parse.side_effect = lambda val: val
         self.reader.read.side_effect = iter([read(path1), read(path2)])
         return self.check.check([['dummy_path1', 'dummy_path2']], self.parser, self.reader)
 
@@ -28,10 +28,7 @@ class TestMarkdownComparator(TestCase):
         diffs = self._test_markdown('tests/fixtures/lang/en/test2.md', 'tests/fixtures/lang/de/test2.md')
 
         self.assertEqual(1, len(diffs))
-        diff = diffs[0]
-        self.assertEqual('dummy_path1', diff.base.parsed)
-        self.assertEqual('dummy_path2', diff.other.parsed)
-        self.assertNotEqual([], diff.error_msgs)
+        self.assertNotEqual([], diffs[0].error_msgs)
 
     @skip('not working')
     def test_markdown_broken_url(self):

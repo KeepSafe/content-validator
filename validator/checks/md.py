@@ -1,5 +1,6 @@
 import re
 from sdiff import diff, renderer
+from markdown import markdown
 
 from ..errors import MdDiff, ContentData
 
@@ -20,16 +21,16 @@ class MarkdownComparator(object):
         errors = []
         for row in data:
             base = row.pop(0)
-            base_content = reader.read(base)
+            base_content = parser.parse(reader.read(base))
             for other in row:
-                other_content = reader.read(other)
+                other_content = parser.parse(reader.read(other))
                 other_diff, base_diff, error = diff(other_content, base_content, renderer=renderer.HtmlRenderer())
                 if error:
                     error_msgs = []
                     if error:
                         error_msgs = map(lambda e: e.message, error)
-                    base_data = ContentData(base_content, parser.parse(base_content), base_diff)
-                    other_data = ContentData(other_content, parser.parse(other_content), other_diff)
+                    base_data = ContentData(base_content, markdown(base_content), base_diff)
+                    other_data = ContentData(other_content, markdown(other_content), other_diff)
                     errors.append(MdDiff(base_data, other_data, error_msgs))
         return errors
 
