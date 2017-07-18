@@ -15,6 +15,12 @@ class Validator(object):
             self.reporter.report(errors)
         return errors
 
+    def async_validate(self):
+        errors = yield from self.check.async_check(self.contents, self.parser, self.reader)
+        if self.reporter is not None:
+            self.reporter.report(errors)
+        return errors
+
 
 class ReportBuilder(object):
     def __init__(self, contents, parser, reader, check):
@@ -68,6 +74,11 @@ class CheckBuilder(object):
     def validate(self):
         check = checks.ChainCheck(self.checks)
         return Validator(self.contents, self.parser, self.reader, check).validate()
+
+    def async_validate(self):
+        check = checks.ChainCheck(self.checks)
+        res = yield from Validator(self.contents, self.parser, self.reader, check).async_validate()
+        return res
 
 
 class ParserBuilder(object):
