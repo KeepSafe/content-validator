@@ -149,6 +149,11 @@ class UrlStatusChecker(object):
 
         return future.result()
 
+    def async_check(self, urls):
+        future = asyncio.Future()
+        yield from self._check_urls_coro(urls, future)
+        return future.result()
+
 
 class UrlValidator(object):
     _extractors = {'txt': TextUrlExtractor, 'html': HtmlUrlExtractor}
@@ -160,7 +165,7 @@ class UrlValidator(object):
             raise MissingUrlExtractorError('no extractor for filetype %s', filetype)
         self.extractor = extractor_class(**kwargs)
 
-    def check(self, data, parser, reader):
+    def _get_urls(self, data, parser, reader):
         flat_data = set(p for sublist in data for p in sublist)
         # TODO yield instead
         urls = {}
@@ -171,6 +176,16 @@ class UrlValidator(object):
                 url = urls.get(file_url, UrlDiff(file_url))
                 url.add_file(element)
                 urls[url.url] = url
+        return urls
+
+    def check(self, data, parser, reader):
+        urls = self._get_urls(data, parser, reader)
         checker = UrlStatusChecker(headers=self.client_headers)
         invalid_urls = checker.check(urls.values())
+        return invalid_urls
+
+    def async_check(self, data, parser, reader):
+        urls = self._get_urls(data, parser, reader)
+        checker = UrlStatusChecker(headers=self.client_headers)
+        invalid_urls = yield from checker.async_check(urls.values())
         return invalid_urls
