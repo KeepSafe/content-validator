@@ -3,7 +3,6 @@ import logging
 import asyncio
 import aiohttp
 import string
-import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse, urljoin
 
@@ -91,26 +90,17 @@ class UrlStatusChecker(object):
         self._headers = headers
 
     def _make_request(self, url):
-        status = None
         res = None
         try:
             logging.info('checking {}'.format(url))
             res = yield from aiohttp.request('get', url, headers=self._headers)
-            status = res.status
+            return res.status
         except Exception:
             logging.error('Error making request to %s', url)
+            return 500
         finally:
             if res:
                 res.close()
-
-        if not status:
-            try:
-                logging.info('backup checking {}'.format(url))
-                status = requests.get(url).status_code
-            except Exception:
-                logging.error('Error making backup request to %s', url)
-                status = 500
-        return status
 
     def _retry_request(self, url, status):
         new_status = status
@@ -134,8 +124,10 @@ class UrlStatusChecker(object):
 
     @asyncio.coroutine
     def _check_urls_coro(self, urls, future):
-        for url in urls:
-            url.status_code = yield from self._request_status_code(url.url)
+        tasks = [self._request_status_code(url.url) for url in urls]
+        results = yield from asyncio.gather(*tasks)
+        for index, url in enumerate(urls):
+            url.status_code = results[index]
             url.has_disallowed_chars = self._has_disallowed_chars(url.url)
         invalid_urls = filter(lambda u: not u.is_valid(), urls)
         future.set_result(list(invalid_urls))

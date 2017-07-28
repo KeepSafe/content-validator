@@ -5,5 +5,3 @@ html2text==2014.12.29
 lxml==3.4.1
 parse==1.6.6
 aiohttp==0.21.2
-requests==2.13.0
-pyOpenSSL==16.2.0
