@@ -50,7 +50,11 @@ def _params_pattern(pattern, params, **kwargs):
     # change parameters for wildcards so we can use it in glob
     wildcard_params = {k: '*' for k in params}
     wildcard_pattern = pattern.format(**wildcard_params)
-    paths = list(Path().glob(wildcard_pattern))
+    if Path(wildcard_pattern).is_absolute():
+        rel_wildcard_pattern = str(Path(wildcard_pattern).relative_to('/'))
+        paths = list(Path('/').glob(rel_wildcard_pattern))
+    else:
+        paths = list(Path().glob(wildcard_pattern))
 
     # get all available values for params and wildcards
     parse_pattern = pattern.replace('**', '{}').replace('*', '{}')
