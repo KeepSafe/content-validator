@@ -27,9 +27,12 @@ class TestMarkdownComparator(TestCase):
     def test_markdown_different(self):
         diffs = self._test_markdown('tests/fixtures/lang/en/test2.md', 'tests/fixtures/lang/de/test2.md')
 
+        expected_html = read('tests/fixtures/lang/en/test2.html').strip()
+
         self.assertEqual(1, len(diffs))
         diff = diffs[0]
         self.assertEqual('dummy_path1', diff.base.original)
+        self.assertEqual(expected_html, diff.base.html)
         self.assertEqual('dummy_path2', diff.other.original)
         self.assertNotEqual([], diff.error_msgs)
 

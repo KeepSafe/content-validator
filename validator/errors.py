@@ -22,7 +22,8 @@ class UrlDiff(object):
         self.files.append(path)
 
 
-ContentData = namedtuple('ContentData', ['original', 'parsed', 'diff'])
+ContentData = namedtuple('ContentData', ['original', 'parsed', 'diff', 'html'])
+ContentData.__new__.__defaults__ = ('', ) * 2
 
 
 class MdDiff(object):
