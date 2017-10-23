@@ -11,6 +11,9 @@ from ..errors import UrlDiff
 logging.getLogger('aiohttp').setLevel(logging.ERROR)
 logging.getLogger('asyncio').setLevel(logging.ERROR)
 
+DEFAULT_USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_3) AppleWebKit/537.36 (KHTML, like Gecko)'\
+                     'Chrome/54.0.2806.0 Safari/537.36'
+
 
 class MissingUrlExtractorError(Exception):
     pass
@@ -86,8 +89,10 @@ class HtmlUrlExtractor(TextUrlExtractor):
 class UrlStatusChecker(object):
     retry_max_count = 3
 
-    def __init__(self, headers={}):
-        self._headers = headers
+    def __init__(self, headers=None):
+        self._headers = headers or {}
+        if 'User-Agent' not in self._headers:
+            self._headers['User-Agent'] = DEFAULT_USER_AGENT
 
     def _make_request(self, url):
         res = None
