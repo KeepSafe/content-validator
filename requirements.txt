@@ -4,4 +4,4 @@ html2text==2014.12.29
 -e git://github.com/KeepSafe/html-structure-diff.git#egg=sdiff
 lxml==3.4.1
 parse==1.6.6
-aiohttp==0.21.2
+aiohttp>=0.21.2
