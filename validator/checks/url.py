@@ -77,7 +77,7 @@ class HtmlUrlExtractor(TextUrlExtractor):
 
     def extract_urls(self, content):
         result = []
-        soup = BeautifulSoup(content)
+        soup = BeautifulSoup(content, 'lxml')
         urls = self._extract_from_anchors(soup) | self._extract_from_img(soup)
         for url in urls:
             fixed_url = self._fix_url(url)
