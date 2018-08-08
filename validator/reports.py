@@ -139,6 +139,7 @@ class StoreReporter(object):
                     self.log.append('\t%s' % str(path))
             if isinstance(error, MdDiff):
                 self.log.append('Files are different:\n\t%s\n\t%s\n\n' % (str(error.base_path), str(error.other_path)))
+            # TODO: handle UrlCountDiff as above
 
 
 class ChainReporter(object):

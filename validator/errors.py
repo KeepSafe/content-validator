@@ -22,6 +22,19 @@ class UrlDiff(object):
         self.files.append(path)
 
 
+class UrlOccurencyDiff:
+    def __init__(self):
+        # self.url =
+        # self.base_path =
+        # self.translation_path =
+        # self.base_occurencies =
+        # self.translation_occurencies =
+
+    def is_valid(self):
+        return self.base_occurencies == self.translation_occurencies
+
+
+
 ContentData = namedtuple('ContentData', ['original', 'parsed', 'diff', 'html'])
 ContentData.__new__.__defaults__ = ('', ) * 2
 
