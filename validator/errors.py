@@ -24,6 +24,7 @@ class UrlDiff(object):
 
 class UrlOccurencyDiff:
     def __init__(self):
+        # it's up to you how you implement this, don't suggest too much with below preposition
         # self.url =
         # self.base_path =
         # self.translation_path =
