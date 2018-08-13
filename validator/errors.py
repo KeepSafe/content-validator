@@ -23,17 +23,16 @@ class UrlDiff(object):
 
 
 class UrlOccurencyDiff:
-    def __init__(self, url, base_file, translated_file, base_urls, translation_urls):
+    def __init__(self, base_file, translated_file, base_urls, translation_urls):
         # DONE - DD
         # it's up to you how you implement this, don't suggest too much with below preposition
-        self.url = url
         self.base_path = base_file
         self.translation_path = translated_file
-        self.base_occurencies = base_urls
-        self.translation_occurencies = translation_urls
+        self.base_occurences = base_urls
+        self.translation_occurences = translation_urls
 
     def is_valid(self):
-        return self.base_occurencies == self.translation_occurencies
+        return self.base_occurences.keys() == self.translation_occurences.keys()
 
 
 

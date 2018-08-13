@@ -6,7 +6,7 @@ import string
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse, urljoin
 
-from ..errors import UrlDiff
+from ..errors import UrlDiff, UrlOccurencyDiff
 
 logging.getLogger('aiohttp').setLevel(logging.ERROR)
 logging.getLogger('asyncio').setLevel(logging.ERROR)
@@ -201,11 +201,11 @@ class UrlOccurenciesValidator(UrlValidator):
         # traverse, parse data, extract urls, create UrlOccurencyDiff (when it comes to traversing, taking a look at checks.md.MarkdownComparator might be helpful)
         error = []
         for row in data:
-		base        = row.pop(0)
-		base_urls   = self._get_urls(base, parser, reader)
-                    for other in row:
-                        other_urls = self._get_urls(other, parser, reader)
-                        error.append(UrlOccurencyDiff(base, other, base_urls, other_urls))
+                base        = row.pop(0)
+                base_urls   = self._get_urls([[base]], parser, reader)
+                for other in row:
+                    other_urls = self._get_urls([[other]], parser, reader)
+                    error.append(UrlOccurencyDiff(base, other, base_urls, other_urls))
         return list(filter(lambda x: not x.is_valid(), error))
         # return list containing UrlOccurencyDiff filtered by .is_valid() == False
 
