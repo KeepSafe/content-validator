@@ -84,7 +84,6 @@ class CheckBuilder(object):
 class ParserBuilder(object):
     def __init__(self, contents, reader=None):
         self.contents = contents
-        # TODO use enum
         self.content_type = 'txt'
         self.reader = reader or parsers.TxtReader()
         self.parsers = []
