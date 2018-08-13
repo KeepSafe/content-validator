@@ -36,9 +36,14 @@ class TextUrlExtractor(object):
         return ''.join(filter(lambda c: c in string.printable, url))
 
     def extract_urls(self, content, unique=True, strip_placeholders=True):
-        result = set(match.group().strip(').') for match in re.finditer(self.url_pattern, content))  # TODO result should be set or list depending on unique arg
-        return filter(self._without_params, map(self._strip_non_ascii_chars, result))  # TODO filter out if strip_placeholders is True
-
+        if unique:
+            result = set(match.group().strip(').') for match in re.finditer(self.url_pattern, content))
+        else:
+            result = list(match.group().strip(').') for match in re.finditer(self.url_pattern, content))  # DONE result should be set or list depending on unique arg
+        if strip_placeholders:
+            return filter(self._without_params, map(self._strip_non_ascii_chars, result))  # DONE filter out if strip_placeholders is True
+        else:
+            return map(self._strip_non_ascii_chars, result)
 
 class HtmlUrlExtractor(TextUrlExtractor):
     def __init__(self, root_url='', skip_images=False, **kwargs):
@@ -192,10 +197,17 @@ class UrlValidator(object):
 
 class UrlOccurenciesValidator(UrlValidator):
     def check(self, data, parser, reader): # -> List[UrlOccurencyDiff]
-        # TODO logic goes here..
+        # TODO logic goes here.. Done?
         # traverse, parse data, extract urls, create UrlOccurencyDiff (when it comes to traversing, taking a look at checks.md.MarkdownComparator might be helpful)
+        error = []
+        for row in data:
+		base        = row.pop(0)
+		base_urls   = self._get_urls(base, parser, reader)
+                    for other in row:
+                        other_urls = self._get_urls(other, parser, reader)
+                        error.append(UrlOccurencyDiff(base, other, base_urls, other_urls))
+        return list(filter(lambda x: not x.is_valid(), error))
         # return list containing UrlOccurencyDiff filtered by .is_valid() == False
-        pass
 
     def async_check(self, *args):
         raise NotImplemented
