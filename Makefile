@@ -11,6 +11,7 @@ FLAGS=
 
 env:
 	python3 -m venv venv
+	$(PIP) install -e git://github.com/KeepSafe/html-structure-diff.git#egg=sdiff
 	$(PYTHON) ./setup.py develop
 
 dev:
@@ -48,6 +49,7 @@ clean:
 	rm -f .coverage
 	rm -rf coverage
 	rm -rf build
+	rm -rf venv
 
 
 .PHONY: all build env linux run pep test vtest testloop cov clean
