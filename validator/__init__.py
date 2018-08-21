@@ -15,8 +15,8 @@ class Validator(object):
             self.reporter.report(errors)
         return errors
 
-    def async_validate(self):
-        errors = yield from self.check.async_check(self.contents, self.parser, self.reader)
+    async def async_validate(self):
+        errors = await self.check.async_check(self.contents, self.parser, self.reader)
         if self.reporter is not None:
             self.reporter.report(errors)
         return errors
@@ -75,16 +75,15 @@ class CheckBuilder(object):
         check = checks.ChainCheck(self.checks)
         return Validator(self.contents, self.parser, self.reader, check).validate()
 
-    def async_validate(self):
+    async def async_validate(self):
         check = checks.ChainCheck(self.checks)
-        res = yield from Validator(self.contents, self.parser, self.reader, check).async_validate()
+        res = await Validator(self.contents, self.parser, self.reader, check).async_validate()
         return res
 
 
 class ParserBuilder(object):
     def __init__(self, contents, reader=None):
         self.contents = contents
-        # TODO use enum
         self.content_type = 'txt'
         self.reader = reader or parsers.TxtReader()
         self.parsers = []

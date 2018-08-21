@@ -5,11 +5,16 @@ Content validator looks at text content and preforms different validation tasks.
 
 ## Requirements
 
-1. Python 3.4.+
+1. Python 3.6.6+
 
 ## Installation
 
 `make install`
+
+## Dev Setup
+
+`make env`
+`make dev`
 
 ## Usage
 

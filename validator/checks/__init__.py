@@ -38,9 +38,9 @@ class ChainCheck(object):
             errors.extend(check_errors)
         return errors
 
-    def async_check(self, contents, parser, reader):
+    async def async_check(self, contents, parser, reader):
         errors = []
         for check in self.checks:
-            check_errors = yield from check.async_check(contents, parser, reader)
+            check_errors = await check.async_check(contents, parser, reader)
             errors.extend(check_errors)
         return errors
