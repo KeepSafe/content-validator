@@ -1,5 +1,5 @@
 from unittest.mock import patch, MagicMock
-from . import AsyncTestCase
+from . import AsyncTestCase, AsyncContext
 
 from validator.checks import url
 
@@ -39,7 +39,7 @@ class TestTxt(AsyncTestCase):
         self.parser.parse.return_value = content
         res = MagicMock()
         res.status = status_code
-        mock_get.return_value = self.make_fut(res)
+        mock_get.return_value = AsyncContext(context=res)
 
         return self.check.check([['dummy_path']], self.parser, self.reader)
 
@@ -146,7 +146,7 @@ class TestHtml(AsyncTestCase):
         self.parser.parse.return_value = content
         res = MagicMock()
         res.status = status_code
-        mock_get.return_value = self.make_fut(res)
+        mock_get.return_value = AsyncContext(context=res)
 
         return check.check(['dummy_path'], self.parser, self.reader)
 

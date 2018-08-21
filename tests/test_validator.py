@@ -4,7 +4,7 @@ from pathlib import Path
 import tempfile
 import os
 import shutil
-from . import AsyncTestCase
+from . import AsyncTestCase, AsyncContext
 
 import validator
 
@@ -17,7 +17,7 @@ class TestUrls(AsyncTestCase):
     def test_plain_text_success(self, mock_get):
         res = MagicMock()
         res.status = 200
-        mock_get.return_value = self.make_fut(res)
+        mock_get.return_value = AsyncContext(context=res)
         errors = self._test_plain_text()
         self.assertEqual([], errors)
 

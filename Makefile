@@ -1,9 +1,7 @@
 # Some simple testing tasks (sorry, UNIX only).
 
 PYTHON=venv/bin/python3
-PSERVE=venv/bin/gunicorn --paste
 PIP=venv/bin/pip
-EI=venv/bin/easy_install
 NOSE=venv/bin/nosetests
 FLAKE=venv/bin/flake8
 FLAGS=
@@ -15,7 +13,7 @@ env:
 	$(PYTHON) ./setup.py develop
 
 dev:
-	$(PIP) install flake8 nose coverage requests
+	$(PIP) install flake8 nose coverage
 	$(PYTHON) ./setup.py develop
 
 install:
@@ -29,9 +27,6 @@ test: flake
 
 vtest:
 	$(NOSE) -s -v $(FLAGS)
-
-testloop:
-	while sleep 1; do $(NOSE) -s $(FLAGS); done
 
 cov cover coverage:
 	$(NOSE) -s --with-cover --cover-html --cover-html-dir ./coverage $(FLAGS)

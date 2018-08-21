@@ -95,17 +95,13 @@ class UrlStatusChecker(object):
             self._headers['User-Agent'] = DEFAULT_USER_AGENT
 
     async def _make_request(self, url):
-        res = None
         try:
             logging.info('checking {}'.format(url))
-            res = await aiohttp.request('get', url, headers=self._headers)
-            return res.status
+            async with aiohttp.request('get', url, headers=self._headers) as res:
+                return res.status
         except Exception:
             logging.error('Error making request to %s', url)
             return 500
-        finally:
-            if res:
-                res.close()
 
     async def _retry_request(self, url, status):
         new_status = status
@@ -154,8 +150,8 @@ class UrlStatusChecker(object):
 class UrlValidator(object):
     _extractors = {'txt': TextUrlExtractor, 'html': HtmlUrlExtractor}
 
-    def __init__(self, filetype, headers={}, **kwargs):
-        self.client_headers = headers
+    def __init__(self, filetype, headers=None, **kwargs):
+        self.client_headers = headers or {}
         extractor_class = self._extractors.get(filetype)
         if extractor_class is None:
             raise MissingUrlExtractorError('no extractor for filetype %s', filetype)

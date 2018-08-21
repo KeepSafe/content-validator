@@ -10,7 +10,7 @@ def read(f):
 
 
 install_requires = [
-    'aiohttp >=3, <4',
+    'aiohttp >=3, <3.4',
     'Markdown >=2, <3',
     'parse >=1, <2',
     'beautifulsoup4 >=4, <5',

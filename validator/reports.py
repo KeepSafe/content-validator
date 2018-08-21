@@ -123,7 +123,7 @@ class ConsoleReporter(object):
                     print('\t{}'.format(str(path)))
                 print()
             if isinstance(error, MdDiff):
-                print('Files are different:\n\t{}\n\t{}\n\n'.format(str(error.base_path), str(error.other_path)))
+                print('Files are different:\n\t{}\n\t{}\n\n'.format(str(error.base), str(error.other)))
 
 
 class StoreReporter(object):
@@ -138,7 +138,7 @@ class StoreReporter(object):
                 for path in error.files:
                     self.log.append('\t%s' % str(path))
             if isinstance(error, MdDiff):
-                self.log.append('Files are different:\n\t%s\n\t%s\n\n' % (str(error.base_path), str(error.other_path)))
+                self.log.append('Files are different:\n\t%s\n\t%s\n\n' % (str(error.base), str(error.other)))
 
 
 class ChainReporter(object):
