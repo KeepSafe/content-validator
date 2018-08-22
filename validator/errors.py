@@ -24,8 +24,6 @@ class UrlDiff(object):
 
 class UrlOccurencyDiff:
     def __init__(self, base_file, translated_file, base_urls, translation_urls):
-        # DONE - DD
-        # it's up to you how you implement this, don't suggest too much with below preposition
         self.base_path = base_file
         self.translation_path = translated_file
         self.base_occurences = base_urls
@@ -33,7 +31,6 @@ class UrlOccurencyDiff:
 
     def is_valid(self):
         return self.base_occurences.keys() == self.translation_occurences.keys()
-
 
 
 ContentData = namedtuple('ContentData', ['original', 'parsed', 'diff', 'html'])

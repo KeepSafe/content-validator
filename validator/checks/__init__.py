@@ -10,10 +10,12 @@ class UndefinedCheckTypeError(Exception):
 def urls(filetype, **kwargs):
     return UrlValidator(filetype, **kwargs)
 
+
 def url_occurences(filetype):
     if filetype != 'txt':
         raise UndefinedCheckTypeError('got filetype %s, expected txt' % filetype)
-    return UrlOccurenciesValitator()
+    return UrlOccurenciesValidator()
+
 
 def markdown(filetype):
     if filetype not in ['txt', 'html']:

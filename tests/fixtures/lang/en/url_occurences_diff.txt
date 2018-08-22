@@ -1,0 +1,3 @@
+http://google.com
+http://facebook.com
+http://yahoo.co.jp

@@ -19,7 +19,8 @@ class MissingUrlExtractorError(Exception):
     pass
 
 
-# the job of extractors is to find all non-parametrized urls in the given text for later checks via UrlValidator which examines is particular url leads to working webpage (200 status)
+# the job of extractors is to find all non-parametrized urls in the given text for later checks via UrlValidator
+# which examines is particular url leads to working webpage (200 status)
 # since we are interested in all urls (including parametrized) we need to sligthly change their API and behaviour
 class TextUrlExtractor(object):
     def __init__(self, **kwargs):
@@ -37,13 +38,17 @@ class TextUrlExtractor(object):
 
     def extract_urls(self, content, unique=True, strip_placeholders=True):
         if unique:
-            result = set(match.group().strip(').') for match in re.finditer(self.url_pattern, content))
+            result = [match.group().strip(').') for match in re.finditer(self.url_pattern, content)]
+            result = set(result)
         else:
-            result = list(match.group().strip(').') for match in re.finditer(self.url_pattern, content))  # DONE result should be set or list depending on unique arg
+            result = [match.group().strip(').') for match in re.finditer(self.url_pattern, content)]
         if strip_placeholders:
-            return filter(self._without_params, map(self._strip_non_ascii_chars, result))  # DONE filter out if strip_placeholders is True
+            temp = [self._strip_non_ascii_chars(value) for value in result]
+            return [value for value in temp if self._without_params(value)]
+            # filter(self._without_params, map(self._strip_non_ascii_chars, result))
         else:
-            return map(self._strip_non_ascii_chars, result)
+            return [self._strip_non_ascii_chars(value) for value in result]
+
 
 class HtmlUrlExtractor(TextUrlExtractor):
     def __init__(self, root_url='', skip_images=False, **kwargs):
@@ -82,13 +87,13 @@ class HtmlUrlExtractor(TextUrlExtractor):
             logging.error('{} not tested'.format(url_parsed.geturl()))
         return result
 
-    def extract_urls(self, content, strip_placeholders=True):
+    def extract_urls(self, content, keep_placeholders=False):
         result = []
         soup = BeautifulSoup(content)
         urls = self._extract_from_anchors(soup) | self._extract_from_img(soup)
         for url in urls:
             fixed_url = self._fix_url(url)
-            if fixed_url and (self._without_params(fixed_url) or not strip_placeholders):
+            if fixed_url and (self._without_params(fixed_url) or keep_placeholders):
                 result.append(fixed_url)
         return result
 
@@ -196,18 +201,15 @@ class UrlValidator(object):
 
 
 class UrlOccurenciesValidator(UrlValidator):
-    def check(self, data, parser, reader): # -> List[UrlOccurencyDiff]
-        # TODO logic goes here.. Done?
-        # traverse, parse data, extract urls, create UrlOccurencyDiff (when it comes to traversing, taking a look at checks.md.MarkdownComparator might be helpful)
+    def check(self, data, parser, reader):
         error = []
         for row in data:
-                base        = row.pop(0)
-                base_urls   = self._get_urls([[base]], parser, reader)
+                base = row.pop(0)
+                base_urls = self._get_urls([[base]], parser, reader)
                 for other in row:
                     other_urls = self._get_urls([[other]], parser, reader)
                     error.append(UrlOccurencyDiff(base, other, base_urls, other_urls))
-        return list(filter(lambda x: not x.is_valid(), error))
-        # return list containing UrlOccurencyDiff filtered by .is_valid() == False
+        return [x for x in error if not x.is_valid()]
 
     def async_check(self, *args):
         raise NotImplemented
