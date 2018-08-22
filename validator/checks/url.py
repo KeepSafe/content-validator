@@ -89,7 +89,7 @@ class HtmlUrlExtractor(TextUrlExtractor):
 
     def extract_urls(self, content, keep_placeholders=False):
         result = []
-        soup = BeautifulSoup(content)
+        soup = BeautifulSoup(content, 'lxml')
         urls = self._extract_from_anchors(soup) | self._extract_from_img(soup)
         for url in urls:
             fixed_url = self._fix_url(url)
@@ -106,31 +106,27 @@ class UrlStatusChecker(object):
         if 'User-Agent' not in self._headers:
             self._headers['User-Agent'] = DEFAULT_USER_AGENT
 
-    def _make_request(self, url):
-        res = None
+    async def _make_request(self, url):
         try:
             logging.info('checking {}'.format(url))
-            res = yield from aiohttp.request('get', url, headers=self._headers)
-            return res.status
+            async with aiohttp.request('get', url, headers=self._headers) as res:
+                return res.status
         except Exception:
             logging.error('Error making request to %s', url)
             return 500
-        finally:
-            if res:
-                res.close()
 
-    def _retry_request(self, url, status):
+    async def _retry_request(self, url, status):
         new_status = status
         times = 1
         while times < self.retry_max_count and status == new_status:
-            new_status = yield from self._make_request(url)
+            new_status = await self._make_request(url)
             times = times + 1
         return new_status
 
-    def _request_status_code(self, url):
-        status = yield from self._make_request(url)
+    async def _request_status_code(self, url):
+        status = await self._make_request(url)
         if status == 500:
-            return (yield from self._retry_request(url, status))
+            return await self._retry_request(url, status)
         return status
 
     def _has_disallowed_chars(self, url):
@@ -139,10 +135,9 @@ class UrlStatusChecker(object):
     def _is_valid(self, status_code, has_disallowed_chars):
         return (200 <= status_code < 300) and not has_disallowed_chars
 
-    @asyncio.coroutine
-    def _check_urls_coro(self, urls, future):
+    async def _check_urls_coro(self, urls, future):
         tasks = [self._request_status_code(url.url) for url in urls]
-        results = yield from asyncio.gather(*tasks)
+        results = await asyncio.gather(*tasks)
         for index, url in enumerate(urls):
             url.status_code = results[index]
             url.has_disallowed_chars = self._has_disallowed_chars(url.url)
@@ -158,17 +153,17 @@ class UrlStatusChecker(object):
 
         return future.result()
 
-    def async_check(self, urls):
+    async def async_check(self, urls):
         future = asyncio.Future()
-        yield from self._check_urls_coro(urls, future)
+        await self._check_urls_coro(urls, future)
         return future.result()
 
 
 class UrlValidator(object):
     _extractors = {'txt': TextUrlExtractor, 'html': HtmlUrlExtractor}
 
-    def __init__(self, filetype, headers={}, **kwargs):
-        self.client_headers = headers
+    def __init__(self, filetype, headers=None, **kwargs):
+        self.client_headers = headers or {}
         extractor_class = self._extractors.get(filetype)
         if extractor_class is None:
             raise MissingUrlExtractorError('no extractor for filetype %s', filetype)
@@ -193,10 +188,10 @@ class UrlValidator(object):
         invalid_urls = checker.check(urls.values())
         return invalid_urls
 
-    def async_check(self, data, parser, reader):
+    async def async_check(self, data, parser, reader):
         urls = self._get_urls(data, parser, reader)
         checker = UrlStatusChecker(headers=self.client_headers)
-        invalid_urls = yield from checker.async_check(urls.values())
+        invalid_urls = await checker.async_check(urls.values())
         return invalid_urls
 
 

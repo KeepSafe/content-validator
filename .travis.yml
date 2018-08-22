@@ -1,9 +1,10 @@
 language: python
 python:
-  - "3.5"
-  - "3.4"
+  - "3.6"
 # command to install dependencies
-install: "pip install -r requirements-dev.txt"
+install:
+  - pip install git+https://github.com/KeepSafe/html-structure-diff.git#egg=sdiff
+  - pip install -r requirements-dev.txt
 # command to run tests
 script:
   - flake8 validator tests
