@@ -37,15 +37,12 @@ class TextUrlExtractor(object):
         return ''.join(filter(lambda c: c in string.printable, url))
 
     def extract_urls(self, content, unique=True, strip_placeholders=True):
+        result = [match.group().strip(').') for match in re.finditer(self.url_pattern, content)]
         if unique:
-            result = [match.group().strip(').') for match in re.finditer(self.url_pattern, content)]
             result = set(result)
-        else:
-            result = [match.group().strip(').') for match in re.finditer(self.url_pattern, content)]
         if strip_placeholders:
             temp = [self._strip_non_ascii_chars(value) for value in result]
             return [value for value in temp if self._without_params(value)]
-            # filter(self._without_params, map(self._strip_non_ascii_chars, result))
         else:
             return [self._strip_non_ascii_chars(value) for value in result]
 
