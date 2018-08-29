@@ -138,7 +138,7 @@ class StoreReporter(object):
                 for path in error.files:
                     self.log.append('\t%s' % str(path))
             if isinstance(error, MdDiff):
-                self.log.append('Files are different:\n\t%s\n\t%s\n\n' % (str(error.base_path), str(error.other_path)))
+                self.log.append('Files are different:\n\t%s\n\t%s\n\n' % (str(error.base), str(error.other)))
             if isinstance(error, UrlOccurencyDiff):
                 self.log.append('Count of URLS in %s and %s are different' % (error.base_path, error.translation_path))
 
