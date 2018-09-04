@@ -6,7 +6,7 @@ import string
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse, urljoin
 
-from ..errors import UrlDiff
+from ..errors import UrlDiff, UrlOccurencyDiff
 
 logging.getLogger('aiohttp').setLevel(logging.ERROR)
 logging.getLogger('asyncio').setLevel(logging.ERROR)
@@ -19,6 +19,9 @@ class MissingUrlExtractorError(Exception):
     pass
 
 
+# the job of extractors is to find all non-parametrized urls in the given text for later checks via UrlValidator
+# which examines is particular url leads to working webpage (200 status)
+# since we are interested in all urls (including parametrized) we need to sligthly change their API and behaviour
 class TextUrlExtractor(object):
     def __init__(self, **kwargs):
         pass
@@ -33,9 +36,15 @@ class TextUrlExtractor(object):
     def _strip_non_ascii_chars(self, url):
         return ''.join(filter(lambda c: c in string.printable, url))
 
-    def extract_urls(self, content):
-        result = set(match.group().strip(').') for match in re.finditer(self.url_pattern, content))
-        return filter(self._without_params, map(self._strip_non_ascii_chars, result))
+    def extract_urls(self, content, unique=True, strip_placeholders=True):
+        result = [match.group().strip(').') for match in re.finditer(self.url_pattern, content)]
+        if unique:
+            result = set(result)
+        if strip_placeholders:
+            temp = [self._strip_non_ascii_chars(value) for value in result]
+            return [value for value in temp if self._without_params(value)]
+        else:
+            return [self._strip_non_ascii_chars(value) for value in result]
 
 
 class HtmlUrlExtractor(TextUrlExtractor):
@@ -75,13 +84,13 @@ class HtmlUrlExtractor(TextUrlExtractor):
             logging.error('{} not tested'.format(url_parsed.geturl()))
         return result
 
-    def extract_urls(self, content):
+    def extract_urls(self, content, keep_placeholders=False):
         result = []
         soup = BeautifulSoup(content, 'lxml')
         urls = self._extract_from_anchors(soup) | self._extract_from_img(soup)
         for url in urls:
             fixed_url = self._fix_url(url)
-            if fixed_url and self._without_params(fixed_url):
+            if fixed_url and (self._without_params(fixed_url) or keep_placeholders):
                 result.append(fixed_url)
         return result
 
@@ -181,3 +190,18 @@ class UrlValidator(object):
         checker = UrlStatusChecker(headers=self.client_headers)
         invalid_urls = await checker.async_check(urls.values())
         return invalid_urls
+
+
+class UrlOccurenciesValidator(UrlValidator):
+    def check(self, data, parser, reader):
+        error = []
+        for row in data:
+                base = row.pop(0)
+                base_urls = self._get_urls([[base]], parser, reader)
+                for other in row:
+                    other_urls = self._get_urls([[other]], parser, reader)
+                    error.append(UrlOccurencyDiff(base, other, base_urls, other_urls))
+        return [x for x in error if not x.is_valid()]
+
+    def async_check(self, *args):
+        raise NotImplemented

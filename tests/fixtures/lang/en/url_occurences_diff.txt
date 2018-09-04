@@ -1,0 +1,6 @@
+http://google.com
+http://facebook.com
+http://yahoo.co.jp
+http://google.com
+http://facebook.com/{{placeholder}}
+http://thehill.com/homenews

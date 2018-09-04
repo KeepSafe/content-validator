@@ -3,7 +3,7 @@ import shutil
 import markdown
 
 from .fs import save_report
-from .errors import UrlDiff, MdDiff
+from .errors import UrlDiff, MdDiff, UrlOccurencyDiff
 
 
 class HtmlReporter(object):
@@ -139,6 +139,8 @@ class StoreReporter(object):
                     self.log.append('\t%s' % str(path))
             if isinstance(error, MdDiff):
                 self.log.append('Files are different:\n\t%s\n\t%s\n\n' % (str(error.base), str(error.other)))
+            if isinstance(error, UrlOccurencyDiff):
+                self.log.append('Count of URLS in %s and %s are different' % (error.base_path, error.translation_path))
 
 
 class ChainReporter(object):

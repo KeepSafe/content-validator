@@ -1,5 +1,5 @@
 from .md import MarkdownComparator
-from .url import UrlValidator
+from .url import UrlValidator, UrlOccurenciesValidator
 from .java import JavaComparator
 
 
@@ -9,6 +9,12 @@ class UndefinedCheckTypeError(Exception):
 
 def urls(filetype, **kwargs):
     return UrlValidator(filetype, **kwargs)
+
+
+def url_occurences(filetype):
+    if filetype != 'txt':
+        raise UndefinedCheckTypeError('got filetype %s, expected txt' % filetype)
+    return UrlOccurenciesValidator()
 
 
 def markdown(filetype):
