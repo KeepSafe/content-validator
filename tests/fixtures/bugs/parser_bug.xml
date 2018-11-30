@@ -1,0 +1,3 @@
+<resources template="common_login.html" style="common_login_ios.css" email_type="marketing">
+    <bitmap id="ee5f6b0d-fb5f-4f56-87b2-606edc98a98e" name="keepsafe_logo" src="SRC" type="bitmap" />
+</resources>

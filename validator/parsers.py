@@ -33,8 +33,9 @@ class XmlParser(object):
         if not content:
             return ''
         elements = ET.fromstring(content).findall(self.query)
-        text_elements = [element.text.strip() for element in elements]
-        return '\n\n'.join(text_elements)
+        text_elements = filter(lambda el: el.text is not None, elements)
+        texts = map(lambda el: el.text.strip(), text_elements)
+        return '\n\n'.join(texts)
 
 
 class CsvParser(object):
