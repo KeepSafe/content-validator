@@ -27,8 +27,8 @@ class TextUrlExtractor(object):
         pass
 
     url_pattern = r'(?i)\b((?:https?://|www\d{0,3}[.]|(!keepsafe://)[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()\[\]<>]' \
-        '+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[' \
-        '\];:\'".,<>?\xab\xbb\u201c\u201d\u2018\u2019]))'
+        r'+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[' \
+        r'\];:\'".,<>?\xab\xbb\u201c\u201d\u2018\u2019]))'
 
     def _without_params(self, url):
         return not bool(re.search(r'\{\{[a-zA-Z0-9_.]+\}\}', url))
@@ -204,4 +204,4 @@ class UrlOccurenciesValidator(UrlValidator):
         return [x for x in error if not x.is_valid()]
 
     def async_check(self, *args):
-        raise NotImplemented
+        raise NotImplementedError
