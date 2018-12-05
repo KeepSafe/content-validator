@@ -3,10 +3,7 @@ from unittest.mock import MagicMock
 
 from validator.checks import md
 
-
-def read(path):
-    with open(path) as fp:
-        return fp.read()
+from tests.utils import read
 
 
 class TestMarkdownComparator(TestCase):
