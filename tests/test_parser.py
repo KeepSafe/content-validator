@@ -2,7 +2,7 @@ from unittest import TestCase
 
 from validator import parsers
 
-from .test_check_md import read
+from tests.utils import read
 
 
 class TestPaths(TestCase):
