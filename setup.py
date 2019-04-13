@@ -14,7 +14,7 @@ install_requires = [
     'Markdown >=2, <3',
     'parse >=1, <2',
     'beautifulsoup4 >=4, <5',
-    'lxml >=3, <4',
+    'lxml >=3',
 ]
 
 setup(
