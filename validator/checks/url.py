@@ -196,11 +196,11 @@ class UrlOccurenciesValidator(UrlValidator):
     def check(self, data, parser, reader):
         error = []
         for row in data:
-                base = row.pop(0)
-                base_urls = self._get_urls([[base]], parser, reader)
-                for other in row:
-                    other_urls = self._get_urls([[other]], parser, reader)
-                    error.append(UrlOccurencyDiff(base, other, base_urls, other_urls))
+            base = row.pop(0)
+            base_urls = self._get_urls([[base]], parser, reader)
+            for other in row:
+                other_urls = self._get_urls([[other]], parser, reader)
+                error.append(UrlOccurencyDiff(base, other, base_urls, other_urls))
         return [x for x in error if not x.is_valid()]
 
     def async_check(self, *args):
