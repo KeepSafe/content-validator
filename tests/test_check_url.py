@@ -26,6 +26,10 @@ class TestTxtExtractor(AsyncTestCase):
         actual = list(self.extractor.extract_urls('aaa http://www.{{param}}.com aaa'))
         self.assertEqual([], actual)
 
+    def test_skip_urls_with_inner_variables(self):
+        actual = list(self.extractor.extract_urls('aaa http://www.{param}.com aaa'))
+        self.assertEqual([], actual)
+
 
 class TestTxt(AsyncTestCase):
     def setUp(self):
@@ -84,10 +88,16 @@ class TestTxt(AsyncTestCase):
         self.assertFalse(mock_get.called)
 
     @patch('aiohttp.request')
+    def test_skip_urls_with_variables(self, mock_get):
+        self._check(mock_get, 'aaa http://domain.com/{ticket.url}, aaa', 200)
+
+        self.assertFalse(mock_get.called)
+
+    @patch('aiohttp.request')
     def test_include_params_in_the_url(self, mock_get):
         self._check(mock_get, 'aaa http://domain.com/hello?id=123 aaa', 200)
 
-        mock_get.assert_called_with('get', 'http://domain.com/hello?id=123', headers=self.headers)
+        mock_get.assert_called_with('get', 'http://domain.com/hello?id=123', allow_redirects=True, headers=self.headers)
 
     @patch('aiohttp.request')
     def test_skip_empty_urls(self, mock_get):
@@ -111,13 +121,13 @@ class TestTxt(AsyncTestCase):
     def test_skip_commas_url(self, mock_get):
         self._check(mock_get, 'aaa http://www.google.com, aaa', 200)
 
-        mock_get.assert_called_with('get', 'http://www.google.com', headers=self.headers)
+        mock_get.assert_called_with('get', 'http://www.google.com', allow_redirects=True, headers=self.headers)
 
     @patch('aiohttp.request')
     def test_skip_chineese_commas(self, mock_get):
         self._check(mock_get, 'aaa http://bit.ly/UpdateKeepSafe。拥有最新版本就能解决大部分问题了。 aaa', 200)
 
-        mock_get.assert_called_with('get', 'http://bit.ly/UpdateKeepSafe', headers=self.headers)
+        mock_get.assert_called_with('get', 'http://bit.ly/UpdateKeepSafe', allow_redirects=True, headers=self.headers)
 
     @patch('aiohttp.request')
     def test_skip_keepsafe_urls(self, mock_get):
@@ -127,10 +137,10 @@ class TestTxt(AsyncTestCase):
 
     @patch('aiohttp.request')
     def test_check_headers(self, mock_get):
-        self.check = url.UrlValidator('txt', headers=self.headers)
+        self.check = url.UrlValidator('txt', allow_redirects=True, headers=self.headers)
         self._check(mock_get, 'aaa http://www.google.com, aaa', 200)
 
-        mock_get.assert_called_with('get', 'http://www.google.com', headers=self.headers)
+        mock_get.assert_called_with('get', 'http://www.google.com', allow_redirects=True, headers=self.headers)
 
 
 class TestHtml(AsyncTestCase):
@@ -154,7 +164,7 @@ class TestHtml(AsyncTestCase):
     def test_happy_path(self, mock_get):
         errors = self._check(mock_get, '<a href="http://www.google.com">link</a>', 200)
 
-        mock_get.assert_called_with('get', 'http://www.google.com', headers=self.headers)
+        mock_get.assert_called_with('get', 'http://www.google.com', allow_redirects=True, headers=self.headers)
         self.assertEqual([], errors)
 
     @patch('aiohttp.request')

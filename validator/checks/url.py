@@ -31,7 +31,7 @@ class TextUrlExtractor(object):
         r'\];:\'".,<>?\xab\xbb\u201c\u201d\u2018\u2019]))'
 
     def _without_params(self, url):
-        return not bool(re.search(r'\{\{[a-zA-Z0-9_.]+\}\}', url))
+        return not bool(re.search(r'\{[a-zA-Z0-9_.]+\}', url))
 
     def _strip_non_ascii_chars(self, url):
         return ''.join(filter(lambda c: c in string.printable, url))
@@ -106,7 +106,7 @@ class UrlStatusChecker(object):
     async def _make_request(self, url):
         try:
             logging.info('checking {}'.format(url))
-            async with aiohttp.request('get', url, headers=self._headers) as res:
+            async with aiohttp.request('get', url, headers=self._headers, allow_redirects=True) as res:
                 return res.status
         except Exception:
             logging.error('Error making request to %s', url)
@@ -196,11 +196,11 @@ class UrlOccurenciesValidator(UrlValidator):
     def check(self, data, parser, reader):
         error = []
         for row in data:
-                base = row.pop(0)
-                base_urls = self._get_urls([[base]], parser, reader)
-                for other in row:
-                    other_urls = self._get_urls([[other]], parser, reader)
-                    error.append(UrlOccurencyDiff(base, other, base_urls, other_urls))
+            base = row.pop(0)
+            base_urls = self._get_urls([[base]], parser, reader)
+            for other in row:
+                other_urls = self._get_urls([[other]], parser, reader)
+                error.append(UrlOccurencyDiff(base, other, base_urls, other_urls))
         return [x for x in error if not x.is_valid()]
 
     def async_check(self, *args):
