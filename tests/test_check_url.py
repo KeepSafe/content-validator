@@ -26,6 +26,10 @@ class TestTxtExtractor(AsyncTestCase):
         actual = list(self.extractor.extract_urls('aaa http://www.{{param}}.com aaa'))
         self.assertEqual([], actual)
 
+    def test_skip_urls_with_inner_variables(self):
+        actual = list(self.extractor.extract_urls('aaa http://www.{param}.com aaa'))
+        self.assertEqual([], actual)
+
 
 class TestTxt(AsyncTestCase):
     def setUp(self):
@@ -80,6 +84,12 @@ class TestTxt(AsyncTestCase):
     @patch('aiohttp.request')
     def test_skip_parameterized_urls_from_start(self, mock_get):
         self._check(mock_get, 'aaa http://{{ticket.url}}, aaa', 200)
+
+        self.assertFalse(mock_get.called)
+
+    @patch('aiohttp.request')
+    def test_skip_urls_with_variables(self, mock_get):
+        self._check(mock_get, 'aaa http://domain.com/{ticket.url}, aaa', 200)
 
         self.assertFalse(mock_get.called)
 

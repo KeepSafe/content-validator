@@ -31,7 +31,7 @@ class TextUrlExtractor(object):
         r'\];:\'".,<>?\xab\xbb\u201c\u201d\u2018\u2019]))'
 
     def _without_params(self, url):
-        return not bool(re.search(r'\{\{[a-zA-Z0-9_.]+\}\}', url))
+        return not bool(re.search(r'\{[a-zA-Z0-9_.]+\}', url))
 
     def _strip_non_ascii_chars(self, url):
         return ''.join(filter(lambda c: c in string.printable, url))
