@@ -106,7 +106,7 @@ class UrlStatusChecker(object):
     async def _make_request(self, url):
         try:
             logging.info('checking {}'.format(url))
-            async with aiohttp.request('get', url, headers=self._headers) as res:
+            async with aiohttp.request('get', url, headers=self._headers, allow_redirects=True) as res:
                 return res.status
         except Exception:
             logging.error('Error making request to %s', url)
