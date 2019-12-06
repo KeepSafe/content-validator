@@ -1,3 +1,5 @@
+import sdiff
+
 from . import parsers, checks, reports, fs
 
 
@@ -56,7 +58,13 @@ class CheckBuilder(object):
         self.checks = []
 
     def md(self):
-        self.checks.append(checks.markdown(self.content_type))
+        self.checks.append(checks.markdown(self.content_type,
+                                           md_parser_cls=sdiff.MdParser))
+        return self
+
+    def zendesk_helpcenter_md(self):
+        self.checks.append(checks.markdown(self.content_type,
+                                           md_parser_cls=sdiff.ZendeskHelpMdParser))
         return self
 
     def url(self, **kwargs):

@@ -1,5 +1,7 @@
 import re
-from sdiff import diff, renderer
+from typing import Type
+
+from sdiff import diff, renderer, MdParser
 from markdown import markdown
 
 from ..errors import MdDiff, ContentData
@@ -13,6 +15,9 @@ def save_file(content, filename):
 
 
 class MarkdownComparator(object):
+    def __init__(self, md_parser_cls: Type[MdParser] = MdParser):
+        self._md_parser_cls = md_parser_cls
+
     def check(self, data, parser, reader):
         if not data:
             return []
@@ -26,7 +31,9 @@ class MarkdownComparator(object):
             for other in row:
                 other_parsed = parser.parse(reader.read(other))
                 other_html = markdown(other_parsed)
-                other_diff, base_diff, error = diff(other_parsed, base_parsed, renderer=renderer.HtmlRenderer())
+                other_diff, base_diff, error = diff(other_parsed, base_parsed,
+                                                    renderer=renderer.HtmlRenderer(),
+                                                    parser_cls=self._md_parser_cls)
                 if error:
                     error_msgs = []
                     if error:
