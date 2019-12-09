@@ -1,3 +1,7 @@
+from typing import Type
+
+from sdiff import MdParser
+
 from .md import MarkdownComparator
 from .url import UrlValidator, UrlOccurenciesValidator
 from .java import JavaComparator
@@ -17,10 +21,10 @@ def url_occurences(filetype):
     return UrlOccurenciesValidator()
 
 
-def markdown(filetype):
+def markdown(filetype, md_parser_cls: Type[MdParser] = MdParser):
     if filetype not in ['txt', 'html']:
         raise UndefinedCheckTypeError('got filetype %s' % filetype)
-    return MarkdownComparator()
+    return MarkdownComparator(md_parser_cls)
 
 
 def java_args(filetype):
