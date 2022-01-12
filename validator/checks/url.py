@@ -5,6 +5,7 @@ import aiohttp
 import string
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse, urljoin
+from typing import List, Optional
 
 from ..errors import UrlDiff, UrlOccurencyDiff
 
@@ -98,7 +99,10 @@ class HtmlUrlExtractor(TextUrlExtractor):
 class UrlStatusChecker(object):
     retry_max_count = 3
 
-    def __init__(self, headers=None):
+    def __init__(self, headers=None, exclude_urls_regexs: Optional[List[str]] = None):
+        self._exclude_urls_regex = exclude_urls_regexs or []
+        if self._exclude_urls_regex:
+            logging.warning('Excluded urls regexps: {}'.format(self._exclude_urls_regex))
         self._headers = headers or {}
         if 'User-Agent' not in self._headers:
             self._headers['User-Agent'] = DEFAULT_USER_AGENT
@@ -133,9 +137,16 @@ class UrlStatusChecker(object):
         return (200 <= status_code < 300) and not has_disallowed_chars
 
     async def _check_urls_coro(self, urls, future):
-        tasks = [self._request_status_code(url.url) for url in urls]
+        urls_without_excluded = []
+        for url in urls:
+            is_exluded = any(re.match(regex, url.url) for regex in self._exclude_urls_regex)
+            if not is_exluded:
+                urls_without_excluded.append(url)
+            else:
+                logging.warning('url {} excluded from status check'.format(url.url))
+        tasks = [self._request_status_code(url.url) for url in urls_without_excluded]
         results = await asyncio.gather(*tasks)
-        for index, url in enumerate(urls):
+        for index, url in enumerate(urls_without_excluded):
             url.status_code = results[index]
             url.has_disallowed_chars = self._has_disallowed_chars(url.url)
         invalid_urls = filter(lambda u: not u.is_valid(), urls)
@@ -159,8 +170,9 @@ class UrlStatusChecker(object):
 class UrlValidator(object):
     _extractors = {'txt': TextUrlExtractor, 'html': HtmlUrlExtractor}
 
-    def __init__(self, filetype, headers=None, **kwargs):
+    def __init__(self, filetype, headers=None, exclude_status_check_regexs: Optional[List[str]] = None, **kwargs):
         self.client_headers = headers or {}
+        self._excluded_status_check_regexs = exclude_status_check_regexs or []
         extractor_class = self._extractors.get(filetype)
         if extractor_class is None:
             raise MissingUrlExtractorError('no extractor for filetype %s', filetype)
@@ -181,13 +193,13 @@ class UrlValidator(object):
 
     def check(self, data, parser, reader):
         urls = self._get_urls(data, parser, reader)
-        checker = UrlStatusChecker(headers=self.client_headers)
+        checker = UrlStatusChecker(headers=self.client_headers, exclude_urls_regexs=self._excluded_status_check_regexs)
         invalid_urls = checker.check(urls.values())
         return invalid_urls
 
     async def async_check(self, data, parser, reader):
         urls = self._get_urls(data, parser, reader)
-        checker = UrlStatusChecker(headers=self.client_headers)
+        checker = UrlStatusChecker(headers=self.client_headers, exclude_urls_regexs=self._excluded_status_check_regexs)
         invalid_urls = await checker.async_check(urls.values())
         return invalid_urls
 
