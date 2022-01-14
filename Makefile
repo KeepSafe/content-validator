@@ -6,6 +6,7 @@ NOSE=venv/bin/nosetests
 FLAKE=venv/bin/flake8
 PYPICLOUD_HOST=pypicloud.getkeepsafe.local
 PIP_ARGS=--extra-index=http://$(PYPICLOUD_HOST)/simple/ --trusted-host $(PYPICLOUD_HOST)
+TWINE=./venv/bin/twine
 FLAGS=
 
 update:
