@@ -3,9 +3,7 @@ python:
   - "3.6"
 # command to install dependencies
 install:
-  - pip install git+https://github.com/KeepSafe/html-structure-diff.git#egg=sdiff
-  - pip install -r requirements-dev.txt
+  - make dev
 # command to run tests
 script:
-  - flake8 validator tests
-  - nosetests
+  - make tests
