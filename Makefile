@@ -4,20 +4,27 @@ PYTHON=venv/bin/python3
 PIP=venv/bin/pip
 NOSE=venv/bin/nosetests
 FLAKE=venv/bin/flake8
+PYPICLOUD_HOST=pypicloud.getkeepsafe.local
+PIP_ARGS=--extra-index=http://$(PYPICLOUD_HOST)/simple/ --trusted-host $(PYPICLOUD_HOST)
+TWINE=./venv/bin/twine
 FLAGS=
 
+update:
+	$(PIP) install -U pip
+	$(PIP) install $(PIP_ARGS) -U .
 
 env:
-	python3 -m venv venv
-	$(PIP) install -e git://github.com/KeepSafe/html-structure-diff.git#egg=sdiff
-	$(PYTHON) ./setup.py develop
+	test -d venv || python3 -m venv venv
 
-dev:
-	$(PIP) install flake8 nose coverage
-	$(PYTHON) ./setup.py develop
+dev: env update
+	$(PIP) install $(PIP_ARGS) .[tests,devtools]
 
-install:
-	$(PYTHON) ./setup.py install
+install: env update
+
+publish:
+	rm -rf dist
+	$(PYTHON) -m build .
+	$(TWINE) upload --verbose --sign --username developer --repository-url http://$(PYPICLOUD_HOST)/simple/ dist/*.whl
 
 flake:
 	$(FLAKE) validator tests
