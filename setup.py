@@ -11,7 +11,7 @@ def read(f):
 
 install_requires = [
     'sdiff @ git+https://github.com/KeepSafe/html-structure-diff.git#egg=sdiff',
-    'aiohttp >=3, <3.4',
+    'aiohttp >=3, <3.9',
     'Markdown',
     'parse >=1, <2',
     'beautifulsoup4 >=4, <5',
