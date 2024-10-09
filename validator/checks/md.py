@@ -14,8 +14,8 @@ def save_file(content, filename):
         fp.write(content)
 
 
-class MarkdownComparator(object):
-    def __init__(self, md_parser_cls: Type[MdParser] = MdParser):
+class MarkdownComparator:
+    def __init__(self, md_parser_cls: type[MdParser] = MdParser):
         self._md_parser_cls = md_parser_cls
 
     def check(self, data, parser, reader):
