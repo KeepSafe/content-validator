@@ -21,7 +21,7 @@ def url_occurences(filetype):
     return UrlOccurenciesValidator()
 
 
-def markdown(filetype, md_parser_cls: Type[MdParser] = MdParser):
+def markdown(filetype, md_parser_cls: type[MdParser] = MdParser):
     if filetype not in ['txt', 'html']:
         raise UndefinedCheckTypeError('got filetype %s' % filetype)
     return MarkdownComparator(md_parser_cls)
@@ -33,7 +33,7 @@ def java_args(filetype):
     return JavaComparator()
 
 
-class ChainCheck(object):
+class ChainCheck:
     def __init__(self, checks):
         self.checks = checks
 

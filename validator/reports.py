@@ -6,7 +6,7 @@ from .fs import save_report
 from .errors import UrlDiff, MdDiff, UrlOccurencyDiff
 
 
-class HtmlReporter(object):
+class HtmlReporter:
     report_template = """
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
           "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
@@ -82,12 +82,12 @@ class HtmlReporter(object):
         self.output_directory = output_directory
 
     def _add_content(self, soup, tag_id, content):
-        tags = soup.select('#{}'.format(tag_id))
+        tags = soup.select(f'#{tag_id}')
 
         if tags and content:
             tags[0].append(content)
         else:
-            print('missing tag: %s, content %s' % (tag_id, content))
+            print('missing tag: {}, content {}'.format(tag_id, content))
         return soup
 
     # TODO just rewrite !!!
@@ -99,7 +99,7 @@ class HtmlReporter(object):
             # TODO use mustache for templates
             report_soup = BeautifulSoup(self.report_template, 'lxml')
             if isinstance(error, UrlDiff):
-                messages = ['<span>{} returned with code {}</span>'.format(error.url, error.status_code)]
+                messages = [f'<span>{error.url} returned with code {error.status_code}</span>']
                 self._add_content(report_soup, 'urls', '\n'.join(messages))
             if isinstance(error, MdDiff):
                 error_msgs = '<br />'.join(map(lambda i: str(i), error.error_msgs))
@@ -113,20 +113,20 @@ class HtmlReporter(object):
             save_report(self.output_directory, error.other.original, report_soup.prettify())
 
 
-class ConsoleReporter(object):
+class ConsoleReporter:
 
     def report(self, errors):
         for error in errors:
             if isinstance(error, UrlDiff):
-                print('{} returned with code {}'.format(error.url, error.status_code))
+                print(f'{error.url} returned with code {error.status_code}')
                 for path in error.files:
-                    print('\t{}'.format(str(path)))
+                    print(f'\t{str(path)}')
                 print()
             if isinstance(error, MdDiff):
-                print('Files are different:\n\t{}\n\t{}\n\n'.format(str(error.base), str(error.other)))
+                print(f'Files are different:\n\t{str(error.base)}\n\t{str(error.other)}\n\n')
 
 
-class StoreReporter(object):
+class StoreReporter:
 
     def __init__(self):
         self.log = []
@@ -134,16 +134,16 @@ class StoreReporter(object):
     def report(self, errors):
         for error in errors:
             if isinstance(error, UrlDiff):
-                self.log.append('%s returned with code %s for files' % (error.url, error.status_code))
+                self.log.append('{} returned with code {} for files'.format(error.url, error.status_code))
                 for path in error.files:
                     self.log.append('\t%s' % str(path))
             if isinstance(error, MdDiff):
-                self.log.append('Files are different:\n\t%s\n\t%s\n\n' % (str(error.base), str(error.other)))
+                self.log.append('Files are different:\n\t{}\n\t{}\n\n'.format(str(error.base), str(error.other)))
             if isinstance(error, UrlOccurencyDiff):
-                self.log.append('Count of URLS in %s and %s are different' % (error.base_path, error.translation_path))
+                self.log.append('Count of URLS in {} and {} are different'.format(error.base_path, error.translation_path))
 
 
-class ChainReporter(object):
+class ChainReporter:
     def __init__(self, reporters):
         self.reporters = reporters
 
