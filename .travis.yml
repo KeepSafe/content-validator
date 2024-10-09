@@ -1,6 +1,7 @@
 language: python
+dist: jammy
 python:
-  - "3.6"
+  - "3.11"
 # command to install dependencies
 install:
   - make dev
