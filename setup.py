@@ -32,6 +32,7 @@ devtools_require = [
 setup(
     name='content-validator',
     version=version,
+    python_requires='>=3.11',
     description=('Content validator looks at text content and preforms different validation tasks'),
     classifiers=[
         'License :: OSI Approved :: BSD License', 'Intended Audience :: Developers', 'Programming Language :: Python'
