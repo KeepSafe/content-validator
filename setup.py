@@ -19,9 +19,9 @@ install_requires = [
 ]
 
 tests_require = [
-    'nose',
-    'flake8==3.6.0',
-    'coverage',
+    'pytest >= 8',
+    'coverage==7.6.1',
+    'flake8==7.1.1',
 ]
 
 devtools_require = [
