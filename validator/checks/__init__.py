@@ -1,5 +1,3 @@
-from typing import Type
-
 from sdiff import MdParser
 
 from .md import MarkdownComparator

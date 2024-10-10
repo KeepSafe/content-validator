@@ -1,5 +1,4 @@
 import re
-from typing import Type
 
 from sdiff import diff, renderer, MdParser
 from markdown import markdown

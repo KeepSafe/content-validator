@@ -140,7 +140,7 @@ class StoreReporter:
             if isinstance(error, MdDiff):
                 self.log.append('Files are different:\n\t{}\n\t{}\n\n'.format(str(error.base), str(error.other)))
             if isinstance(error, UrlOccurencyDiff):
-                self.log.append('Count of URLS in {} and {} are different'.format(error.base_path, error.translation_path))
+                self.log.append(f'Count of URLS in {error.base_path} and {error.translation_path} are different')
 
 
 class ChainReporter:
