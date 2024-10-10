@@ -9,22 +9,22 @@ class ParserError(Exception):
         super().__init__(msg)
 
 
-class FileReader(object):
+class FileReader:
     def read(self, path):
         return read_content(path)
 
 
-class TxtReader(object):
+class TxtReader:
     def read(self, content):
         return content
 
 
-class MarkdownParser(object):
+class MarkdownParser:
     def parse(self, content):
         return markdown.markdown(content)
 
 
-class XmlParser(object):
+class XmlParser:
     def __init__(self, query='*'):
         self.query = query
 
@@ -38,12 +38,12 @@ class XmlParser(object):
         return '\n\n'.join(texts)
 
 
-class CsvParser(object):
+class CsvParser:
     def parse(self, content):
         return '\n'.join(content.split(','))
 
 
-class ChainParser(object):
+class ChainParser:
     def __init__(self, parsers):
         self.parsers = parsers
 

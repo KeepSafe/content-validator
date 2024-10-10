@@ -1,7 +1,7 @@
 from collections import namedtuple
 
 
-class UrlDiff(object):
+class UrlDiff:
 
     def __init__(self, url, files=None, status_code=200, has_disallowed_chars=False):
         self.url = url
@@ -10,7 +10,7 @@ class UrlDiff(object):
         self.has_disallowed_chars = has_disallowed_chars
 
     def __str__(self):
-        return 'Url(%s, %s, %s, %s)' % (self.url, self.files, self.status_code, self.has_disallowed_chars)
+        return 'Url({}, {}, {}, {})'.format(self.url, self.files, self.status_code, self.has_disallowed_chars)
 
     def __repr__(self):
         return 'Url: %s' % self.url
@@ -37,7 +37,7 @@ ContentData = namedtuple('ContentData', ['original', 'parsed', 'diff', 'html'])
 ContentData.__new__.__defaults__ = ('', ) * 2
 
 
-class MdDiff(object):
+class MdDiff:
 
     def __init__(self, base, other, error_msgs):
         self.base = base
