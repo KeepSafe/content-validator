@@ -1,7 +1,6 @@
 import os
 from setuptools import setup, find_packages
 
-
 version = '0.7.1'
 
 
@@ -11,11 +10,11 @@ def read(f):
 
 install_requires = [
     'sdiff @ git+https://github.com/KeepSafe/html-structure-diff.git@0.4.1#egg=sdiff',
-    'aiohttp >=3, <3.4',
+    'aiohttp==3.8.5',
     'Markdown',
     'parse >=1, <2',
     'beautifulsoup4 >=4, <5',
-    'lxml >=3',
+    'lxml<5',
 ]
 
 tests_require = [
