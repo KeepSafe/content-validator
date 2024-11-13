@@ -13,7 +13,7 @@ install_requires = [
     'sdiff @ git+https://github.com/KeepSafe/html-structure-diff.git@0.4.1#egg=sdiff',
     'aiohttp >=3, <3.4',
     'Markdown',
-    'parse >=1, <2',
+    'parse <= 1.8.2',
     'beautifulsoup4 >=4, <5',
     'lxml >=3',
 ]
