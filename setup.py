@@ -1,8 +1,7 @@
 import os
 from setuptools import setup, find_packages
 
-
-version = '0.7.2'
+version = '1.0.0'
 
 
 def read(f):
@@ -10,18 +9,18 @@ def read(f):
 
 
 install_requires = [
-    'sdiff @ git+https://github.com/KeepSafe/html-structure-diff.git@0.4.1#egg=sdiff',
-    'aiohttp >=3, <3.4',
+    'sdiff @ git+https://github.com/KeepSafe/html-structure-diff.git@1.0.0#egg=sdiff',
+    'aiohttp==3.8.5',
     'Markdown',
     'parse <= 1.8.2',
     'beautifulsoup4 >=4, <5',
-    'lxml >=3',
+    'lxml<5',
 ]
 
 tests_require = [
-    'nose',
-    'flake8==3.6.0',
-    'coverage',
+    'pytest >= 8',
+    'coverage==7.6.1',
+    'flake8==7.1.1',
 ]
 
 devtools_require = [
@@ -32,6 +31,7 @@ devtools_require = [
 setup(
     name='content-validator',
     version=version,
+    python_requires='>=3.11',
     description=('Content validator looks at text content and preforms different validation tasks'),
     classifiers=[
         'License :: OSI Approved :: BSD License', 'Intended Audience :: Developers', 'Programming Language :: Python'
