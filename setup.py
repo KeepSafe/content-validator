@@ -14,7 +14,7 @@ install_requires = [
     'Markdown',
     'parse <= 1.8.2',
     'beautifulsoup4 >=4, <5',
-    'lxml<5',
+    'lxml==6.0.2',
 ]
 
 tests_require = [
