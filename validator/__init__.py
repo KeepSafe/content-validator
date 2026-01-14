@@ -3,7 +3,7 @@ import sdiff
 from . import parsers, checks, reports, fs
 
 
-class Validator(object):
+class Validator:
     def __init__(self, contents, parser, reader, check, reporter=None):
         self.contents = contents
         self.parser = parser
@@ -24,7 +24,7 @@ class Validator(object):
         return errors
 
 
-class ReportBuilder(object):
+class ReportBuilder:
     def __init__(self, contents, parser, reader, check):
         self.contents = contents
         self.parser = parser
@@ -49,7 +49,7 @@ class ReportBuilder(object):
         return Validator(self.contents, self.parser, self.reader, self.check, reporter).validate()
 
 
-class CheckBuilder(object):
+class CheckBuilder:
     def __init__(self, contents, content_type, parser, reader):
         self.contents = contents
         self.content_type = content_type
@@ -89,7 +89,7 @@ class CheckBuilder(object):
         return res
 
 
-class ParserBuilder(object):
+class ParserBuilder:
     def __init__(self, contents, reader=None):
         self.contents = contents
         self.content_type = 'txt'
@@ -120,7 +120,7 @@ class ParserBuilder(object):
         return CheckBuilder(self.contents, self.content_type, parser, self.reader)
 
 
-class ContentBuilder(object):
+class ContentBuilder:
     def files(self, pattern, **kwargs):
         contents = fs.files(pattern, **kwargs)
         return ParserBuilder(contents, parsers.FileReader())
