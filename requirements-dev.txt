@@ -1,4 +1,4 @@
 -r requirements.txt
-flake8==3.6.0
-nose
-coverage
+flake8==7.1.1
+pytest>=8
+coverage==7.6.1

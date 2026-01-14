@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from bs4 import BeautifulSoup
 import shutil
 import markdown
@@ -94,13 +96,17 @@ class HtmlReporter:
     # TODO remove isinstance
     def report(self, errors):
         shutil.rmtree(self.output_directory, ignore_errors=True)
+        if self.output_directory:
+            Path(self.output_directory).mkdir(parents=True, exist_ok=True)
         for error in errors:
             # TODO save to different files for links and diff
             # TODO use mustache for templates
             report_soup = BeautifulSoup(self.report_template, 'lxml')
+            source_path = None
             if isinstance(error, UrlDiff):
                 messages = [f'<span>{error.url} returned with code {error.status_code}</span>']
                 self._add_content(report_soup, 'urls', '\n'.join(messages))
+                source_path = error.files[0] if error.files else 'url_errors'
             if isinstance(error, MdDiff):
                 error_msgs = '<br />'.join(map(lambda i: str(i), error.error_msgs))
                 base = markdown.markdown(error.base.parsed)
@@ -110,7 +116,9 @@ class HtmlReporter:
                 report_soup = self._add_content(report_soup, 'left_diff', BeautifulSoup(error.base.diff, 'lxml').body)
                 report_soup = self._add_content(report_soup, 'right_diff', BeautifulSoup(error.other.diff, 'lxml').body)
                 report_soup = self._add_content(report_soup, 'error_msgs', BeautifulSoup(error_msgs, 'lxml').body)
-            save_report(self.output_directory, error.other.original, report_soup.prettify())
+                source_path = error.other.original
+            if source_path is not None:
+                save_report(self.output_directory, source_path, report_soup.prettify())
 
 
 class ConsoleReporter:
