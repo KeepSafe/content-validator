@@ -16,7 +16,7 @@ class AsyncTestCase(TestCase):
         return self.loop.run_until_complete(coro)
 
     def make_fut(self, result):
-        fut = asyncio.Future(loop=self.loop)
+        fut = asyncio.Future()
         fut.set_result(result)
         return fut
 

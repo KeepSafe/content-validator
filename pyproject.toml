@@ -1,0 +1,52 @@
+[build-system]
+requires = ["setuptools>=82.0.1", "wheel>=0.47.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "content-validator"
+version = "1.0.0"
+description = "Content validator looks at text content and performs different validation tasks"
+readme = "README.md"
+requires-python = ">=3.11,<3.12"
+license = "Apache-2.0"
+authors = [
+    { name = "Keepsafe", email = "support@getkeepsafe.com" },
+]
+classifiers = [
+    "Intended Audience :: Developers",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+]
+dependencies = [
+    "aiohttp==3.13.5",
+    "beautifulsoup4==4.14.3",
+    "lxml==6.1.0",
+    "Markdown==3.10.2",
+    "parse==1.8.2",
+    "sdiff @ git+https://github.com/KeepSafe/html-structure-diff.git@0.4.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "build==1.5.0",
+    "coverage==7.14.0",
+    "flake8==7.3.0",
+    "flake8-pyproject==1.2.4",
+    "pynose==1.5.5",
+    "pyupgrade==3.21.2",
+    "twine==6.2.0",
+]
+
+[project.scripts]
+content-validator = "validator:main"
+
+[project.urls]
+Homepage = "https://github.com/KeepSafe/content-validator/"
+
+[tool.setuptools.packages.find]
+exclude = ["tests"]
+
+[tool.flake8]
+max-line-length = 120
+ignore = ["F403"]

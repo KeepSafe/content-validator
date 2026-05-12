@@ -6,7 +6,7 @@ ARG_PATTERN = r'%(?:\d+\$)?(?:[a-zA-Z]+)?(?:\d+)?(?:.\d+)?[a-zA-Z]+'
 REF_PATTERN = r'@string/\w+'
 
 
-class JavaComparator(object):
+class JavaComparator:
     def _get_args(self, content):
         return re.findall(ARG_PATTERN, content)
 

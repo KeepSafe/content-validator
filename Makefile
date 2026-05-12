@@ -1,27 +1,26 @@
-# Some simple testing tasks (sorry, UNIX only).
-
-PYTHON=venv/bin/python3
+PYTHON=venv/bin/python
 PIP=venv/bin/pip
-NOSE=venv/bin/nosetests
+NOSE=venv/bin/pynose
 FLAKE=venv/bin/flake8
 PYPICLOUD_HOST=pypicloud.getkeepsafe.local
-PIP_ARGS=--extra-index=http://$(PYPICLOUD_HOST)/simple/ --trusted-host $(PYPICLOUD_HOST)
+PIP_ARGS=--extra-index-url http://$(PYPICLOUD_HOST)/simple/ --trusted-host $(PYPICLOUD_HOST)
 TWINE=./venv/bin/twine
 FLAGS=
 
-update:
-	$(PIP) install -U pip
-	$(PIP) install $(PIP_ARGS) -U .
+build-dir:
+	mkdir -p build/test build/coverage
 
 env:
-	test -d venv || python3 -m venv venv
+	test -d venv || python3.11 -m venv venv
+	$(PIP) install -U pip setuptools wheel
+	$(PIP) install $(PIP_ARGS) -e .
 
-dev: env update
-	$(PIP) install $(PIP_ARGS) .[tests,devtools]
+dev: env
+	$(PIP) install $(PIP_ARGS) -e '.[dev]'
 
-install: env update
+install: env
 
-publish:
+publish: dev
 	rm -rf dist
 	$(PYTHON) -m build .
 	$(TWINE) upload --verbose --sign --username developer --repository-url http://$(PYPICLOUD_HOST)/simple/ dist/*.whl
@@ -29,15 +28,34 @@ publish:
 flake:
 	$(FLAKE) validator tests
 
-test: flake
+check-msgpack:
+	@true
+
+lint: build-dir flake check-msgpack
+
+test-only: build-dir
 	$(NOSE) -s $(FLAGS)
 
-vtest:
+test: lint test-only
+
+vtest vtests: build-dir
 	$(NOSE) -s -v $(FLAGS)
 
-cov cover coverage:
-	$(NOSE) -s --with-cover --cover-html --cover-html-dir ./coverage $(FLAGS)
+cov cover coverage: build-dir
+	$(NOSE) -s --with-coverage --cover-inclusive --cover-erase --cover-package=validator \
+		--cover-html --cover-html-dir ./coverage $(FLAGS)
 	echo "open file://`pwd`/coverage/index.html"
+
+ci-env: clean env
+
+ci-dev-install: dev
+
+hooks:
+	cp git_hooks/pre-push `git rev-parse --git-path hooks/pre-push`
+	chmod +x `git rev-parse --git-path hooks/pre-push`
+
+unhooks:
+	rm -f `git rev-parse --git-path hooks/pre-push`
 
 clean:
 	rm -rf `find . -name __pycache__`
@@ -51,7 +69,10 @@ clean:
 	rm -f .coverage
 	rm -rf coverage
 	rm -rf build
+	rm -rf dist
+	rm -rf *.egg-info
 	rm -rf venv
 
 
-.PHONY: all build env linux run pep test vtest testloop cov clean
+.PHONY: build-dir env dev install publish flake check-msgpack lint test-only test vtest vtests cov cover coverage ci-env \
+	ci-dev-install hooks unhooks clean
