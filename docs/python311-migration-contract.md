@@ -60,6 +60,48 @@ validation behavior, and publishes dependency pins that downstream requirement c
 | Task 5: Gunicorn/Docker local infra | Not applicable | No service runtime or local backing services. |
 | Task 6: requirements build pipeline | Partial | Keep simple package requirements files aligned with `pyproject.toml`; no ansible service lockfile pipeline applies. |
 
+## Skill Guardrail Audit
+
+- Preflight: `python3.11`, `rg`, and `gh` were present. Docker/service daemon checks were not run because the repo audit
+  classified this as no-stack library/tool shape.
+- Branching: used the requested single `python311-upgrade` branch for this no-stack repo instead of six stacked service
+  PRs. The branch split is documented here.
+- Service contract tooling: the bundled service contract verifier and CI gate require service-template assertions. They
+  are not applicable to this package because there is no Paste/Gunicorn/INI/healthcheck service surface to validate.
+- `libks==1.0.0`: not applicable; `content-validator` does not depend on `libks`.
+- `LIBKS_VERSION` Makefile extraction: not applicable for the same reason.
+- CircleCI sample addition: not applicable unless team policy requires both providers. This repo had Travis only, so the
+  branch updates the existing Travis command instead of adding a second CI provider.
+- `PYNOSE_SHARED_FLAGS`: applicable. Makefile test flow uses the sample-style coverage-inclusive pynose flags and adds
+  CI XML/xunit artifact flags under `ifdef CI`.
+- Runtime `print()` guardrail: `ConsoleReporter` intentionally prints user-facing report output for a library reporter,
+  not long-running service runtime output.
+
+## Dependency Audit Notes
+
+Upgraded because Python 3.11 compatibility or modern tooling required it:
+
+- `aiohttp >=3,<3.4` / `aiohttp==3.1.3` -> `aiohttp==3.13.5`: old versions fail to import on Python 3.11 due removed
+  `asyncio.coroutines._DEBUG`.
+- `beautifulsoup4 >=4,<5` / `beautifulsoup4==4.4.1` -> `beautifulsoup4==4.14.3`: selected as the current Python
+  3.11-compatible package set and covered by existing HTML/URL fixture tests.
+- `lxml >=3` / `lxml==3.5` -> `lxml==6.1.0`: old pin lacks the target Python 3.11 wheel/runtime baseline; parser and
+  reporter fixtures cover the exercised behavior.
+- `Markdown` / unpinned -> `Markdown==3.10.2`: pinned to the resolved Python 3.11-compatible runtime set and covered by
+  markdown diff fixtures.
+- `flake8==3.6.0` -> `flake8==7.3.0` plus `flake8-pyproject==1.2.4`: old flake8 fails with modern setuptools because
+  `pkg_resources` is no longer available by default.
+- `nose` -> `pynose==1.5.5`: old nose fails on Python 3.11 due removed `collections.Callable`.
+
+Not upgraded beyond existing compatible pin:
+
+- `parse==1.8.2`; latest observed during audit was `1.22.0`. Retained because downstream repos have already been
+  sensitive to this cap, the current usage is narrow path-pattern parsing in `validator.fs`, and fixture coverage passed
+  without behavior drift.
+- `sdiff @ git+https://github.com/KeepSafe/html-structure-diff.git@0.4.1`; retained as a tagged dependency because
+  `0.4.1` is the known-compatible HTML structure diff implementation and previous repo history explicitly pinned this
+  tag to avoid incompatible `sdiff` changes.
+
 ## Proof Commands
 
 Default proof must be local/free and must not call production, paid providers, or public external service APIs.
@@ -76,14 +118,12 @@ Default proof must be local/free and must not call production, paid providers, o
 
 ## Known Gaps
 
-- Local interpreter is `python3.11.9`; the shared service skill defaults `.python-version` to `3.11.13`. This repo will
-  declare `3.11.13`, while local verification records the available `3.11.9` runtime unless `3.11.13` is installed.
 - Dependency version discovery and installation require package index/GitHub access, but behavior proof must not call
   production or paid provider APIs.
 
 ## Migration Results
 
-Date: 2026-05-11
+Date: 2026-05-11, refreshed against `python311-service-upgrade-stack` on 2026-05-13.
 
 Branch: `python311-upgrade`
 
@@ -107,12 +147,19 @@ Completed applicable work:
 - Added a minimal `content-validator` CLI help/version smoke surface because package metadata already declared the
   console script.
 - Updated README, Travis command, Makefile, and git hook target for the Python 3.11 package workflow.
+- Refreshed the Makefile test flow to use sample-style `PYNOSE_SHARED_FLAGS`, including coverage-inclusive defaults and
+  CI XML/xunit artifact flags under `ifdef CI`.
+- Added explicit dependency audit notes for upgraded and intentionally retained pins.
 
 Proof results:
 
+- `python3.11 --version`: Python 3.11.13.
 - `make clean`: pass.
 - `make dev`: pass with package-index/GitHub dependency resolution.
-- `make test`: pass, 65 tests, 1 skipped.
+- `make test`: pass, 65 tests, 1 skipped, coverage total 84%.
+- `CI=1 make test`: pass, 65 tests, 1 skipped, writes `build/coverage/coverage.xml` and `build/test/results.xml`.
+- `venv/bin/flake8 --version`: reports `7.3.0` with `Flake8-pyproject: 1.2.4`.
+- `venv/bin/pynose --version`: reports `1.5.5`.
 - `venv/bin/python -m compileall validator tests`: pass.
 - Import smoke for `validator`, `validator.checks.url`, `aiohttp==3.13.5`, `beautifulsoup4==4.14.3`,
   `lxml==6.1.0`, `Markdown==3.10.2`, `parse==1.8.2`, and `sdiff`: pass.
@@ -128,7 +175,6 @@ Service-only tasks intentionally skipped:
 
 Known gaps after migration:
 
-- Verification ran with local `python3.11.9`; `.python-version` declares the shared target `3.11.13`.
 - Dependency installation/build proof required network access to package indexes and GitHub for the tagged `sdiff`
   dependency.
 - Downstream repos still need their own requirements recompilation against `content-validator==1.0.0`.
