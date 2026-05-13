@@ -52,9 +52,9 @@ validation behavior, and publishes dependency pins that downstream requirement c
 | --- | --- | --- |
 | Task 1: pyproject, Python 3.11, dependency audit, pyupgrade | Applicable | Replace legacy packaging with `pyproject.toml`, set Python 3.11 policy, bump version to `1.0.0`, hard-pin runtime deps, upgrade Python 3.11-incompatible deps, and run pyupgrade. |
 | Task 2a: formatting and Flake8 alignment | Applicable | Keep 120-char style in `pyproject.toml`, use `flake8-pyproject`, and fix lint only as needed. |
-| Task 2b: hooks, CI, Makefile, README | Partial | Normalize Makefile, README, and existing Travis workflow for this package. Service runner targets and CircleCI additions are not required for this no-stack repo. |
+| Task 2b: hooks, CI, Makefile, README | Partial | Normalize Makefile, README, existing Travis workflow, and add CircleCI for this package. Service runner targets are not required for this no-stack repo. |
 | Task 2c: mypy stabilization | Not applicable | No existing typing contract or service baseline requires mypy for this small library in this migration. |
-| Task 3: msgpack/redis/asynctest/nose | Partial | Replace `nose` with `pynose`. No msgpack, redis, aioredis, or asynctest usage exists. |
+| Task 3: msgpack/redis/asynctest/nose | Partial | Replace `nose` with `pynose`. No `msgpack` dependency exists in `pyproject.toml`, and no redis, aioredis, or asynctest usage exists. |
 | Task 4: asyncio/aiohttp modernization | Applicable | Upgrade `aiohttp`, keep URL checker request behavior, and remove Python 3.11-incompatible loop usage in tests. |
 | Task 4c: async test harness modernization | Applicable | Keep the lightweight local helper but remove removed `loop=` APIs and validate async URL tests. |
 | Task 5: Gunicorn/Docker local infra | Not applicable | No service runtime or local backing services. |
@@ -70,8 +70,11 @@ validation behavior, and publishes dependency pins that downstream requirement c
   are not applicable to this package because there is no Paste/Gunicorn/INI/healthcheck service surface to validate.
 - `libks==1.0.0`: not applicable; `content-validator` does not depend on `libks`.
 - `LIBKS_VERSION` Makefile extraction: not applicable for the same reason.
-- CircleCI sample addition: not applicable unless team policy requires both providers. This repo had Travis only, so the
-  branch updates the existing Travis command instead of adding a second CI provider.
+- CircleCI sample addition: applicable by team request. The branch adapts the skill sample
+  `resources/python-services/samples/circleci_config.yml` into `.circleci/config.yml` with `prepare_cache`, `lint`,
+  and `test` jobs, `cimg/python:3.11.13`, sample-style `v3-pip-` / `v3-venv-` fallback cache keys, xUnit/coverage XML
+  artifact storage, and the sample non-fatal Codecov upload step. The install job uses this repo's `make ci-dev-install`
+  target without the sample's libks-specific SSH install.
 - `PYNOSE_SHARED_FLAGS`: applicable. Makefile test flow uses the sample-style coverage-inclusive pynose flags and adds
   CI XML/xunit artifact flags under `ifdef CI`.
 - Runtime `print()` guardrail: `ConsoleReporter` intentionally prints user-facing report output for a library reporter,
@@ -89,18 +92,23 @@ Upgraded because Python 3.11 compatibility or modern tooling required it:
   reporter fixtures cover the exercised behavior.
 - `Markdown` / unpinned -> `Markdown==3.10.2`: pinned to the resolved Python 3.11-compatible runtime set and covered by
   markdown diff fixtures.
+- `parse <= 1.8.2` / `parse==1.8.2` -> `parse==1.22.0`: latest available version passed parser, URL, and fixture
+  coverage locally.
+- `sdiff @ git+https://github.com/KeepSafe/html-structure-diff.git@0.4.1` ->
+  `sdiff @ git+https://github.com/KeepSafe/html-structure-diff.git@1.0.0`: latest tagged version installed, imported,
+  and passed existing HTML/markdown structure-diff fixture coverage locally.
 - `flake8==3.6.0` -> `flake8==7.3.0` plus `flake8-pyproject==1.2.4`: old flake8 fails with modern setuptools because
   `pkg_resources` is no longer available by default.
 - `nose` -> `pynose==1.5.5`: old nose fails on Python 3.11 due removed `collections.Callable`.
 
-Not upgraded beyond existing compatible pin:
+Latest-version audit on 2026-05-13:
 
-- `parse==1.8.2`; latest observed during audit was `1.22.0`. Retained because downstream repos have already been
-  sensitive to this cap, the current usage is narrow path-pattern parsing in `validator.fs`, and fixture coverage passed
-  without behavior drift.
-- `sdiff @ git+https://github.com/KeepSafe/html-structure-diff.git@0.4.1`; retained as a tagged dependency because
-  `0.4.1` is the known-compatible HTML structure diff implementation and previous repo history explicitly pinned this
-  tag to avoid incompatible `sdiff` changes.
+- Current/latest: `aiohttp==3.13.5`, `beautifulsoup4==4.14.3`, `lxml==6.1.0`, `Markdown==3.10.2`,
+  `parse==1.22.0`, `build==1.5.0`, `coverage==7.14.0`, `flake8==7.3.0`, `flake8-pyproject==1.2.4`,
+  `pynose==1.5.5`, `pyupgrade==3.21.2`, `twine==6.2.0`, `setuptools>=82.0.1`, and `wheel>=0.47.0`.
+- Current/latest git tag: `sdiff @ git+https://github.com/KeepSafe/html-structure-diff.git@1.0.0`.
+- Msgpack: not applicable. `msgpack` is not a `content-validator` dependency and there are no direct source/test
+  msgpack call sites to migrate.
 
 ## Proof Commands
 
@@ -110,6 +118,9 @@ Default proof must be local/free and must not call production, paid providers, o
 - `venv/bin/pip install -e '.[dev]'`
 - `make lint`
 - `make test`
+- `make ci-dev-install`
+- `CI=1 make test`
+- `circleci config validate .circleci/config.yml`
 - `venv/bin/python -m compileall validator tests`
 - Import smoke for `validator`, `validator.checks.url`, `aiohttp`, `bs4`, `lxml`, `markdown`, `parse`, and `sdiff`.
 - Golden compatibility tests over existing fixtures, with URL network calls mocked.
@@ -136,36 +147,40 @@ Completed applicable work:
 - Upgraded Python 3.11-incompatible dependencies:
   - `aiohttp >=3,<3.4` / `aiohttp==3.1.3` to `aiohttp==3.13.5`; old import failed on removed
     `asyncio.coroutines._DEBUG`.
-  - `beautifulsoup4` to `4.14.3`, `lxml` to `6.1.0`, and `Markdown` to `3.10.2` as the resolved Python 3.11
-    package set.
+  - `beautifulsoup4` to `4.14.3`, `lxml` to `6.1.0`, `Markdown` to `3.10.2`, `parse` to `1.22.0`, and `sdiff` to
+    tag `1.0.0` as the latest Python 3.11 package set.
   - `flake8==3.6.0` to `flake8==7.3.0` plus `flake8-pyproject==1.2.4`; old flake8 failed on removed
     `pkg_resources`.
   - `nose` to `pynose==1.5.5`; old nose failed on removed `collections.Callable`.
-- Kept `parse==1.8.2` and tagged `sdiff` dependency to avoid unnecessary behavior drift.
 - Ran pyupgrade ladder through `--py311-plus`.
 - Added fixture-backed golden compatibility tests for markdown diff shape, Java placeholders, and URL extraction.
 - Added a minimal `content-validator` CLI help/version smoke surface because package metadata already declared the
   console script.
-- Updated README, Travis command, Makefile, and git hook target for the Python 3.11 package workflow.
+- Updated README, Travis command, sample-shaped CircleCI config, Makefile, and git hook target for the Python 3.11
+  package workflow.
 - Refreshed the Makefile test flow to use sample-style `PYNOSE_SHARED_FLAGS`, including coverage-inclusive defaults and
   CI XML/xunit artifact flags under `ifdef CI`.
-- Added explicit dependency audit notes for upgraded and intentionally retained pins.
+- Added sample-style CI cache/install targets: `ci-env` reuses a valid cached venv or recreates it, and
+  `ci-dev-install` installs `.[dev]` through the shared private-index-aware `PIP_ARGS`.
+- Added explicit dependency audit notes and latest-version proof for runtime, build, and test pins.
 
 Proof results:
 
 - `python3.11 --version`: Python 3.11.13.
 - `make clean`: pass.
 - `make dev`: pass with package-index/GitHub dependency resolution.
+- `make ci-dev-install`: pass with package-index/GitHub dependency resolution after expected sandbox DNS escalation.
 - `make test`: pass, 65 tests, 1 skipped, coverage total 84%.
 - `CI=1 make test`: pass, 65 tests, 1 skipped, writes `build/coverage/coverage.xml` and `build/test/results.xml`.
 - `venv/bin/flake8 --version`: reports `7.3.0` with `Flake8-pyproject: 1.2.4`.
 - `venv/bin/pynose --version`: reports `1.5.5`.
 - `venv/bin/python -m compileall validator tests`: pass.
 - Import smoke for `validator`, `validator.checks.url`, `aiohttp==3.13.5`, `beautifulsoup4==4.14.3`,
-  `lxml==6.1.0`, `Markdown==3.10.2`, `parse==1.8.2`, and `sdiff`: pass.
+  `lxml==6.1.0`, `Markdown==3.10.2`, `parse==1.22.0`, and `sdiff==1.0.0`: pass.
 - `venv/bin/content-validator --help` and `venv/bin/content-validator --version`: pass.
 - `venv/bin/pip check`: pass.
 - `venv/bin/python -m build .`: pass; built local sdist and wheel under ignored `dist/`.
+- `circleci config validate .circleci/config.yml`: pass; CircleCI CLI reported the config is valid.
 - `make hooks`: pass after escalation to write shared git metadata; hook was removed afterward with `make unhooks`.
 
 Service-only tasks intentionally skipped:

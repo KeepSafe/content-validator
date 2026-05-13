@@ -1,4 +1,4 @@
-content-validator [![Build Status](https://travis-ci.org/KeepSafe/content-validator.svg?branch=master)](https://travis-ci.org/KeepSafe/content-validator)
+content-validator [![Build Status](https://travis-ci.org/KeepSafe/content-validator.svg?branch=master)](https://travis-ci.org/KeepSafe/content-validator) [![CircleCI](https://circleci.com/gh/KeepSafe/content-validator.svg?style=svg)](https://circleci.com/gh/KeepSafe/content-validator)
 =================
 
 Content validator looks at text content and preforms different validation tasks.

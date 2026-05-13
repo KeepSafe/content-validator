@@ -2,5 +2,5 @@ aiohttp==3.13.5
 beautifulsoup4==4.14.3
 lxml==6.1.0
 Markdown==3.10.2
-parse==1.8.2
-sdiff @ git+https://github.com/KeepSafe/html-structure-diff.git@0.4.1
+parse==1.22.0
+sdiff @ git+https://github.com/KeepSafe/html-structure-diff.git@1.0.0
