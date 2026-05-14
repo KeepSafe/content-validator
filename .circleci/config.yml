@@ -6,39 +6,41 @@ job_options:
         - image: cimg/python:3.11.13
 
 step_options:
-  - &pip_cache
-      key: v3-pip-{{ arch }}-{{ checksum "pyproject.toml" }}-{{ checksum "requirements.txt" }}
+  - &restore_pip_cache_options
       keys:
         - v3-pip-{{ arch }}-{{ checksum "pyproject.toml" }}-{{ checksum "requirements.txt" }}
         - v3-pip-{{ arch }}-{{ checksum "pyproject.toml" }}
         - v3-pip-{{ arch }}
         - v3-pip-
+  - &save_pip_cache_options
+      key: v3-pip-{{ arch }}-{{ checksum "pyproject.toml" }}-{{ checksum "requirements.txt" }}
       paths:
         - ~/.local
         - ~/.cache
-  - &venv_cache
-      key: v3-venv-{{ arch }}-{{ checksum "pyproject.toml" }}-{{ checksum "requirements.txt" }}
+  - &restore_venv_cache_options
       keys:
         - v3-venv-{{ arch }}-{{ checksum "pyproject.toml" }}-{{ checksum "requirements.txt" }}
         - v3-venv-{{ arch }}-{{ checksum "pyproject.toml" }}
         - v3-venv-{{ arch }}
         - v3-venv-
+  - &save_venv_cache_options
+      key: v3-venv-{{ arch }}-{{ checksum "pyproject.toml" }}-{{ checksum "requirements.txt" }}
       paths:
         - /home/circleci/project/venv
 
 steps:
   - &restore_pip_cache
       restore_cache:
-        << : *pip_cache
+        << : *restore_pip_cache_options
   - &save_pip_cache
       save_cache:
-        << : *pip_cache
+        << : *save_pip_cache_options
   - &restore_venv_cache
       restore_cache:
-        << : *venv_cache
+        << : *restore_venv_cache_options
   - &save_venv_cache
       save_cache:
-        << : *venv_cache
+        << : *save_venv_cache_options
 
 jobs:
   prepare_cache:
