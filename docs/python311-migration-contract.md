@@ -73,9 +73,12 @@ validation behavior, and publishes dependency pins that downstream requirement c
 - CircleCI sample addition: applicable by team request. The branch adapts the skill sample
   `resources/python-services/samples/circleci_config.yml` into a native CircleCI 2.1 `.circleci/config.yml`. Reusable
   `executors` and `commands` replace the sample's YAML-anchor layout, with schema-correct restore and save cache
-  commands. The config retains `prepare_cache`, `lint`, and `test` jobs, `cimg/python:3.11.13`, sample-style `v3-pip-`
-  / `v3-venv-` fallback cache keys, xUnit/coverage XML artifact storage, and the sample non-fatal Codecov upload step.
-  The install job uses this repo's `make ci-dev-install` target without the sample's libks-specific SSH install.
+  commands. The config retains `prepare_cache`, `lint`, and `test` jobs, `cimg/python:3.11.13`, versioned `v4-pip-`
+  / `v4-venv-` fallback cache keys, xUnit/coverage XML artifact storage, and the sample non-fatal Codecov upload step.
+  The install job uses this repo's `make ci-dev-install` target and loads the same KeepSafe organization SSH key
+  fingerprint as `email-service` before dependency installation. The current `KeepSafe/html-structure-diff` dependency
+  is public and installs from an HTTPS tag, but the key keeps CI ready for private organization dependencies. The
+  matching key must be provisioned in this CircleCI project's SSH-key settings.
 - `PYNOSE_SHARED_FLAGS`: applicable. Makefile test flow uses the sample-style coverage-inclusive pynose flags and adds
   CI XML/xunit artifact flags under `ifdef CI`.
 - Runtime `print()` guardrail: `ConsoleReporter` intentionally prints user-facing report output for a library reporter,
@@ -163,7 +166,8 @@ Completed applicable work:
 - Refreshed the Makefile test flow to use sample-style `PYNOSE_SHARED_FLAGS`, including coverage-inclusive defaults and
   CI XML/xunit artifact flags under `ifdef CI`.
 - Added sample-style CI cache/install targets: `ci-env` reuses a valid cached venv or recreates it, and
-  `ci-dev-install` installs `.[dev]` through the shared private-index-aware `PIP_ARGS`.
+  `ci-dev-install` installs `requirements-dev.txt` from public sources before installing the package editable without
+  re-resolving dependencies. Local development and publishing retain the private-index-aware `PIP_ARGS` where needed.
 - Added explicit dependency audit notes and latest-version proof for runtime, build, and test pins.
 
 Proof results:
@@ -171,7 +175,7 @@ Proof results:
 - `python3.11 --version`: Python 3.11.13.
 - `make clean`: pass.
 - `make dev`: pass with package-index/GitHub dependency resolution.
-- `make ci-dev-install`: pass with package-index/GitHub dependency resolution after expected sandbox DNS escalation.
+- `make ci-dev-install`: pass with public package-index/GitHub dependency resolution and no internal `pypicloud` probe.
 - `make test`: pass, 65 tests, 1 skipped, coverage total 84%.
 - `CI=1 make test`: pass, 65 tests, 1 skipped, writes `build/coverage/coverage.xml` and `build/test/results.xml`.
 - `venv/bin/flake8 --version`: reports `7.3.0` with `Flake8-pyproject: 1.2.4`.

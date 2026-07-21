@@ -52,16 +52,17 @@ cov cover coverage: build-dir
 
 ci-env:
 	@if [ -d "venv" ] && $(PIP) --version >/dev/null 2>&1; then \
-		echo "Reusing cached CI venv, no need to recreate when it hasn't changed"; \
+		echo "Reusing cached CI venv"; \
 	else \
 		echo "No cached venv found, creating fresh venv..."; \
-		if [ -d "venv" ]; then rm -rf venv; fi; \
+		rm -rf venv; \
 		python3.11 -m venv venv; \
-		$(PIP) install -U pip setuptools wheel; \
 	fi
+	$(PIP) install -U pip setuptools wheel
 
 ci-dev-install: ci-env
-	$(PIP) install $(PIP_ARGS) -e '.[dev]'
+	$(PIP) install -r requirements-dev.txt
+	$(PIP) install --no-deps -e .
 
 hooks:
 	cp git_hooks/pre-push `git rev-parse --git-path hooks/pre-push`

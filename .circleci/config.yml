@@ -6,19 +6,25 @@ executors:
       - image: cimg/python:3.11.13
 
 commands:
+  add_keepsafe_ssh_key:
+    steps:
+      - add_ssh_keys:
+          fingerprints:
+            - "SHA256:pJ03tKCbM0v8N2POl8moui64q9vFhk0io0gMzkEe6ls"
+
   restore_pip_cache:
     steps:
       - restore_cache:
           keys:
-            - v3-pip-{{ arch }}-{{ checksum "pyproject.toml" }}-{{ checksum "requirements.txt" }}
-            - v3-pip-{{ arch }}-{{ checksum "pyproject.toml" }}
-            - v3-pip-{{ arch }}
-            - v3-pip-
+            - v4-pip-{{ arch }}-{{ checksum "pyproject.toml" }}-{{ checksum "requirements.txt" }}-{{ checksum "requirements-dev.txt" }}
+            - v4-pip-{{ arch }}-{{ checksum "pyproject.toml" }}-{{ checksum "requirements.txt" }}
+            - v4-pip-{{ arch }}
+            - v4-pip-
 
   save_pip_cache:
     steps:
       - save_cache:
-          key: v3-pip-{{ arch }}-{{ checksum "pyproject.toml" }}-{{ checksum "requirements.txt" }}
+          key: v4-pip-{{ arch }}-{{ checksum "pyproject.toml" }}-{{ checksum "requirements.txt" }}-{{ checksum "requirements-dev.txt" }}
           paths:
             - ~/.local
             - ~/.cache
@@ -27,15 +33,15 @@ commands:
     steps:
       - restore_cache:
           keys:
-            - v3-venv-{{ arch }}-{{ checksum "pyproject.toml" }}-{{ checksum "requirements.txt" }}
-            - v3-venv-{{ arch }}-{{ checksum "pyproject.toml" }}
-            - v3-venv-{{ arch }}
-            - v3-venv-
+            - v4-venv-{{ arch }}-{{ checksum "pyproject.toml" }}-{{ checksum "requirements.txt" }}-{{ checksum "requirements-dev.txt" }}
+            - v4-venv-{{ arch }}-{{ checksum "pyproject.toml" }}-{{ checksum "requirements.txt" }}
+            - v4-venv-{{ arch }}
+            - v4-venv-
 
   save_venv_cache:
     steps:
       - save_cache:
-          key: v3-venv-{{ arch }}-{{ checksum "pyproject.toml" }}-{{ checksum "requirements.txt" }}
+          key: v4-venv-{{ arch }}-{{ checksum "pyproject.toml" }}-{{ checksum "requirements.txt" }}-{{ checksum "requirements-dev.txt" }}
           paths:
             - /home/circleci/project/venv
 
@@ -44,6 +50,7 @@ jobs:
     executor: python311
     steps:
       - checkout
+      - add_keepsafe_ssh_key
       - restore_pip_cache
       - restore_venv_cache
       - run:
