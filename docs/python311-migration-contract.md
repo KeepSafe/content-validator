@@ -50,7 +50,7 @@ validation behavior, and publishes dependency pins that downstream requirement c
 
 | Skill task | Applicability | Plan |
 | --- | --- | --- |
-| Task 1: pyproject, Python 3.11, dependency audit, pyupgrade | Applicable | Replace legacy packaging with `pyproject.toml`, set Python 3.11 policy, bump version to `1.0.0`, hard-pin runtime deps, upgrade Python 3.11-incompatible deps, and run pyupgrade. |
+| Task 1: pyproject, Python 3.11, dependency audit | Applicable | Replace legacy packaging with `pyproject.toml`, set Python 3.11 policy, bump version to `1.0.0`, hard-pin runtime deps, upgrade Python 3.11-incompatible deps, and modernize source syntax. |
 | Task 2a: formatting and Flake8 alignment | Applicable | Keep 120-char style in `pyproject.toml`, use `flake8-pyproject`, and fix lint only as needed. |
 | Task 2b: hooks, CI, Makefile, README | Partial | Normalize Makefile, README, existing Travis workflow, and add CircleCI for this package. Service runner targets are not required for this no-stack repo. |
 | Task 2c: mypy stabilization | Not applicable | No existing typing contract or service baseline requires mypy for this small library in this migration. |
@@ -107,7 +107,7 @@ Dependency target refresh on 2026-07-21:
 - Team-required target: `aiohttp==3.13.2` (intentionally retained instead of a newer release).
 - Refreshed pins: `beautifulsoup4==4.15.0`, `lxml==6.1.1`, `parse==1.22.1`, and `coverage==7.15.2`.
 - Other validated pins: `Markdown==3.10.2`, `build==1.5.0`, `flake8==7.3.0`, `flake8-pyproject==1.2.4`,
-  `pynose==1.5.5`, `pyupgrade==3.21.2`, `twine==6.2.0`, `setuptools>=82.0.1`, and `wheel>=0.47.0`.
+  `pynose==1.5.5`, `twine==6.2.0`, `setuptools>=82.0.1`, and `wheel>=0.47.0`.
 - Current/latest git tag: `sdiff @ git+https://github.com/KeepSafe/html-structure-diff.git@1.0.0`.
 - Msgpack: not applicable. `msgpack` is not a `content-validator` dependency and there are no direct source/test
   msgpack call sites to migrate.
@@ -155,7 +155,6 @@ Completed applicable work:
   - `flake8==3.6.0` to `flake8==7.3.0` plus `flake8-pyproject==1.2.4`; old flake8 failed on removed
     `pkg_resources`.
   - `nose` to `pynose==1.5.5`; old nose failed on removed `collections.Callable`.
-- Ran pyupgrade ladder through `--py311-plus`.
 - Added fixture-backed golden compatibility tests for markdown diff shape, Java placeholders, and URL extraction.
 - Added a minimal `content-validator` CLI help/version smoke surface because package metadata already declared the
   console script.
