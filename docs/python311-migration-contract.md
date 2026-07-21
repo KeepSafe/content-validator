@@ -71,10 +71,11 @@ validation behavior, and publishes dependency pins that downstream requirement c
 - `libks==1.0.0`: not applicable; `content-validator` does not depend on `libks`.
 - `LIBKS_VERSION` Makefile extraction: not applicable for the same reason.
 - CircleCI sample addition: applicable by team request. The branch adapts the skill sample
-  `resources/python-services/samples/circleci_config.yml` into `.circleci/config.yml` with `prepare_cache`, `lint`,
-  and `test` jobs, `cimg/python:3.11.13`, sample-style `v3-pip-` / `v3-venv-` fallback cache keys, xUnit/coverage XML
-  artifact storage, and the sample non-fatal Codecov upload step. The install job uses this repo's `make ci-dev-install`
-  target without the sample's libks-specific SSH install.
+  `resources/python-services/samples/circleci_config.yml` into a native CircleCI 2.1 `.circleci/config.yml`. Reusable
+  `executors` and `commands` replace the sample's YAML-anchor layout, with schema-correct restore and save cache
+  commands. The config retains `prepare_cache`, `lint`, and `test` jobs, `cimg/python:3.11.13`, sample-style `v3-pip-`
+  / `v3-venv-` fallback cache keys, xUnit/coverage XML artifact storage, and the sample non-fatal Codecov upload step.
+  The install job uses this repo's `make ci-dev-install` target without the sample's libks-specific SSH install.
 - `PYNOSE_SHARED_FLAGS`: applicable. Makefile test flow uses the sample-style coverage-inclusive pynose flags and adds
   CI XML/xunit artifact flags under `ifdef CI`.
 - Runtime `print()` guardrail: `ConsoleReporter` intentionally prints user-facing report output for a library reporter,
@@ -122,6 +123,7 @@ Default proof must be local/free and must not call production, paid providers, o
 - `make ci-dev-install`
 - `CI=1 make test`
 - `circleci config validate .circleci/config.yml`
+- `circleci config process .circleci/config.yml`
 - `venv/bin/python -m compileall validator tests`
 - Import smoke for `validator`, `validator.checks.url`, `aiohttp`, `bs4`, `lxml`, `markdown`, `parse`, and `sdiff`.
 - Golden compatibility tests over existing fixtures, with URL network calls mocked.
@@ -157,7 +159,7 @@ Completed applicable work:
 - Added fixture-backed golden compatibility tests for markdown diff shape, Java placeholders, and URL extraction.
 - Added a minimal `content-validator` CLI help/version smoke surface because package metadata already declared the
   console script.
-- Updated README, Travis command, sample-shaped CircleCI config, Makefile, and git hook target for the Python 3.11
+- Updated README, Travis command, native CircleCI 2.1 config, Makefile, and git hook target for the Python 3.11
   package workflow.
 - Refreshed the Makefile test flow to use sample-style `PYNOSE_SHARED_FLAGS`, including coverage-inclusive defaults and
   CI XML/xunit artifact flags under `ifdef CI`.
@@ -181,7 +183,9 @@ Proof results:
 - `venv/bin/content-validator --help` and `venv/bin/content-validator --version`: pass.
 - `venv/bin/pip check`: pass.
 - `venv/bin/python -m build .`: pass; built local sdist and wheel under ignored `dist/`.
-- `circleci config validate .circleci/config.yml`: pass; CircleCI CLI reported the config is valid.
+- `circleci config validate .circleci/config.yml`: pass; CircleCI CLI reported the version 2.1 config is valid.
+- `circleci config process .circleci/config.yml`: pass with CircleCI API access; reusable executors and commands expand
+  into the expected `prepare_cache`, `lint`, and `test` jobs.
 - `make hooks`: pass after escalation to write shared git metadata; hook was removed afterward with `make unhooks`.
 
 Service-only tasks intentionally skipped:

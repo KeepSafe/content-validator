@@ -1,66 +1,63 @@
-version: 2
+version: 2.1
 
-job_options:
-  - &default_job
-      docker:
-        - image: cimg/python:3.11.13
+executors:
+  python311:
+    docker:
+      - image: cimg/python:3.11.13
 
-step_options:
-  - &restore_pip_cache_options
-      keys:
-        - v3-pip-{{ arch }}-{{ checksum "pyproject.toml" }}-{{ checksum "requirements.txt" }}
-        - v3-pip-{{ arch }}-{{ checksum "pyproject.toml" }}
-        - v3-pip-{{ arch }}
-        - v3-pip-
-  - &save_pip_cache_options
-      key: v3-pip-{{ arch }}-{{ checksum "pyproject.toml" }}-{{ checksum "requirements.txt" }}
-      paths:
-        - ~/.local
-        - ~/.cache
-  - &restore_venv_cache_options
-      keys:
-        - v3-venv-{{ arch }}-{{ checksum "pyproject.toml" }}-{{ checksum "requirements.txt" }}
-        - v3-venv-{{ arch }}-{{ checksum "pyproject.toml" }}
-        - v3-venv-{{ arch }}
-        - v3-venv-
-  - &save_venv_cache_options
-      key: v3-venv-{{ arch }}-{{ checksum "pyproject.toml" }}-{{ checksum "requirements.txt" }}
-      paths:
-        - /home/circleci/project/venv
+commands:
+  restore_pip_cache:
+    steps:
+      - restore_cache:
+          keys:
+            - v3-pip-{{ arch }}-{{ checksum "pyproject.toml" }}-{{ checksum "requirements.txt" }}
+            - v3-pip-{{ arch }}-{{ checksum "pyproject.toml" }}
+            - v3-pip-{{ arch }}
+            - v3-pip-
 
-steps:
-  - &restore_pip_cache
-      restore_cache:
-        << : *restore_pip_cache_options
-  - &save_pip_cache
-      save_cache:
-        << : *save_pip_cache_options
-  - &restore_venv_cache
-      restore_cache:
-        << : *restore_venv_cache_options
-  - &save_venv_cache
-      save_cache:
-        << : *save_venv_cache_options
+  save_pip_cache:
+    steps:
+      - save_cache:
+          key: v3-pip-{{ arch }}-{{ checksum "pyproject.toml" }}-{{ checksum "requirements.txt" }}
+          paths:
+            - ~/.local
+            - ~/.cache
+
+  restore_venv_cache:
+    steps:
+      - restore_cache:
+          keys:
+            - v3-venv-{{ arch }}-{{ checksum "pyproject.toml" }}-{{ checksum "requirements.txt" }}
+            - v3-venv-{{ arch }}-{{ checksum "pyproject.toml" }}
+            - v3-venv-{{ arch }}
+            - v3-venv-
+
+  save_venv_cache:
+    steps:
+      - save_cache:
+          key: v3-venv-{{ arch }}-{{ checksum "pyproject.toml" }}-{{ checksum "requirements.txt" }}
+          paths:
+            - /home/circleci/project/venv
 
 jobs:
   prepare_cache:
-    << : *default_job
+    executor: python311
     steps:
       - checkout
-      - *restore_pip_cache
-      - *restore_venv_cache
+      - restore_pip_cache
+      - restore_venv_cache
       - run:
           name: Install dependencies
           command: make ci-dev-install
-      - *save_pip_cache
-      - *save_venv_cache
+      - save_pip_cache
+      - save_venv_cache
 
   lint:
-    << : *default_job
+    executor: python311
     steps:
       - checkout
-      - *restore_pip_cache
-      - *restore_venv_cache
+      - restore_pip_cache
+      - restore_venv_cache
       - run:
           name: Run the linter
           command: make lint
@@ -68,11 +65,11 @@ jobs:
           path: build/test
 
   test:
-    << : *default_job
+    executor: python311
     steps:
       - checkout
-      - *restore_pip_cache
-      - *restore_venv_cache
+      - restore_pip_cache
+      - restore_venv_cache
       - run:
           name: Run the tests
           command: make test-only
@@ -86,7 +83,6 @@ jobs:
           command: bash <(curl -s https://codecov.io/bash) -t ${CODECOV_TOKEN} -f build/coverage/coverage.xml || echo "Codecov did not collect coverage reports"
 
 workflows:
-  version: 2
   test:
     jobs:
       - prepare_cache
