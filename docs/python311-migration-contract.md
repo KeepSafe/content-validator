@@ -77,8 +77,8 @@ validation behavior, and publishes dependency pins that downstream requirement c
   / `v4-venv-` fallback cache keys, xUnit/coverage XML artifact storage, and the sample non-fatal Codecov upload step.
   The install job uses this repo's `make ci-dev-install` target and loads the same KeepSafe organization SSH key
   fingerprint as `email-service` before dependency installation. The current `KeepSafe/html-structure-diff` dependency
-  is public and installs from an HTTPS tag, but the key keeps CI ready for private organization dependencies. The
-  matching key must be provisioned in this CircleCI project's SSH-key settings.
+  is a KeepSafe-owned internal dependency installed from an immutable HTTPS commit. The key keeps CI ready for private
+  organization dependencies and must be provisioned in this CircleCI project's SSH-key settings.
 - `PYNOSE_SHARED_FLAGS`: applicable. Makefile test flow uses the sample-style coverage-inclusive pynose flags and adds
   CI XML/xunit artifact flags under `ifdef CI`.
 - Runtime `print()` guardrail: `ConsoleReporter` intentionally prints user-facing report output for a library reporter,
@@ -99,9 +99,9 @@ Upgraded because Python 3.11 compatibility or modern tooling required it:
   markdown diff fixtures.
 - `parse <= 1.8.2` / `parse==1.8.2` -> `parse==1.22.1`: latest available version passed parser, URL, and fixture
   coverage locally.
-- `sdiff @ git+https://github.com/KeepSafe/html-structure-diff.git@0.4.1` -> `sdiff==1.1.0`: select the reviewed Python
-  3.11 package release, remove the production Git dependency, and align downstream testing with the sibling
-  html-structure-diff Python 3.11 worktree.
+- `sdiff @ git+https://github.com/KeepSafe/html-structure-diff.git@0.4.1` -> the `sdiff==1.1.0` source at immutable
+  commit `7cac22038c90708296789197d8492d8aa16087be`: select the reviewed Python 3.11 package from
+  html-structure-diff PR 14 without resolving the unrelated public PyPI project while the KeepSafe release is unpublished.
 - `flake8==3.6.0` -> `flake8==7.3.0` plus `flake8-pyproject==1.2.4`: old flake8 fails with modern setuptools because
   `pkg_resources` is no longer available by default.
 - `nose` -> `pynose==1.5.5`: old nose fails on Python 3.11 due removed `collections.Callable`.
@@ -112,7 +112,8 @@ Dependency target refresh on 2026-07-21:
 - Refreshed pins: `beautifulsoup4==4.15.0`, `lxml==6.0.2`, `parse==1.22.1`, and `coverage==7.15.2`.
 - Other validated pins: `Markdown==3.10.2`, `build==1.5.0`, `flake8==7.3.0`, `flake8-pyproject==1.2.4`,
   `pynose==1.5.5`, `twine==6.2.0`, `setuptools>=82.0.1`, and `wheel>=0.47.0`.
-- Python 3.11 release target: `sdiff==1.1.0`; it must be published before content-validator 1.0.0.
+- Python 3.11 release target: `sdiff==1.1.0`, currently installed from immutable html-structure-diff commit
+  `7cac22038c90708296789197d8492d8aa16087be`; replace the direct reference with an index pin after publication.
 - Msgpack: not applicable. `msgpack` is not a `content-validator` dependency and there are no direct source/test
   msgpack call sites to migrate.
 
@@ -155,7 +156,7 @@ Completed applicable work:
   - `aiohttp >=3,<3.4` / `aiohttp==3.1.3` to the team-required `aiohttp==3.13.2`; old import failed on removed
     `asyncio.coroutines._DEBUG`.
   - `beautifulsoup4` to `4.15.0`, `lxml` to `6.0.2`, `Markdown` to `3.10.2`, `parse` to `1.22.1`, and `sdiff` to
-    package version `1.1.0` as the compatible downstream Python 3.11 package set.
+    package version `1.1.0` at an immutable reviewed commit as the compatible downstream Python 3.11 package set.
   - `flake8==3.6.0` to `flake8==7.3.0` plus `flake8-pyproject==1.2.4`; old flake8 failed on removed
     `pkg_resources`.
   - `nose` to `pynose==1.5.5`; old nose failed on removed `collections.Callable`.
@@ -173,6 +174,13 @@ Completed applicable work:
 
 Proof results:
 
+- CircleCI resolver regression proof on 2026-08-04:
+  - A fresh CPython 3.11.13 virtualenv installed `requirements-dev.txt`, cloned exact html-structure-diff commit
+    `7cac22038c90708296789197d8492d8aa16087be`, and installed it as `sdiff==1.1.0`.
+  - Flake8 passed; pynose passed 65 tests with 1 expected skip and 84% line coverage.
+  - Imports confirmed `content-validator==1.0.0`, `sdiff==1.1.0`, and `lxml==6.0.2`; `pip check` passed.
+  - An isolated source copy built the sdist and wheel. Both artifacts contain the immutable `sdiff` direct reference,
+    and `twine check` passes for both.
 - `python3.11 --version`: Python 3.11.13.
 - `make clean`: pass.
 - `make dev`: pass with package-index/GitHub dependency resolution.
@@ -183,7 +191,7 @@ Proof results:
 - `venv/bin/pynose --version`: reports `1.5.5`.
 - `venv/bin/python -m compileall validator tests`: pass.
 - Import smoke for `validator`, `validator.checks.url`, `aiohttp==3.13.2`, `beautifulsoup4==4.15.0`,
-  `lxml==6.0.2`, `Markdown==3.10.2`, `parse==1.22.1`, and editable `sdiff==1.1.0`: pass.
+  `lxml==6.0.2`, `Markdown==3.10.2`, `parse==1.22.1`, and commit-pinned `sdiff==1.1.0`: pass.
 - `venv/bin/content-validator --help` and `venv/bin/content-validator --version`: pass.
 - `venv/bin/pip check`: pass.
 - `venv/bin/python -m build .`: pass; built local sdist and wheel under ignored `dist/`.
@@ -199,7 +207,8 @@ Service-only tasks intentionally skipped:
 
 Known gaps after migration:
 
-- `sdiff==1.1.0` must be published before a non-editable content-validator 1.0.0 installation can resolve.
+- `sdiff==1.1.0` remains unpublished. The current dependency resolves from an immutable GitHub commit and should move
+  to an index pin after the KeepSafe package release is available.
 - Downstream repos still need their own requirements recompilation against `content-validator==1.0.0`.
 
 ## Email-service downstream correction
@@ -211,5 +220,6 @@ The email-service resolver proof found that `libks==1.0.5` requires
 packages impossible to resolve in one environment. The target is therefore
 `lxml==6.0.2`, which remains Python 3.11-compatible and is covered by the same
 parser, URL, report, and golden fixture tests. The same downstream audit
-replaces the Git-tagged sdiff dependency with the publishable `sdiff==1.1.0`
-package target.
+replaces the Git-tagged sdiff 1.0.0 dependency with the reviewed 1.1.0 source pinned to immutable commit
+`7cac22038c90708296789197d8492d8aa16087be`. The direct reference is temporary until the KeepSafe 1.1.0 package is
+published.
