@@ -92,15 +92,16 @@ Upgraded because Python 3.11 compatibility or modern tooling required it:
   `asyncio.coroutines._DEBUG`; `3.13.2` is the team-required target and its exercised request behavior passes locally.
 - `beautifulsoup4 >=4,<5` / `beautifulsoup4==4.4.1` -> `beautifulsoup4==4.15.0`: selected as the current Python
   3.11-compatible package set and covered by existing HTML/URL fixture tests.
-- `lxml >=3` / `lxml==3.5` -> `lxml==6.1.1`: old pin lacks the target Python 3.11 wheel/runtime baseline; parser and
-  reporter fixtures cover the exercised behavior.
+- `lxml >=3` / `lxml==3.5` -> `lxml==6.0.2`: old pin lacks the target Python 3.11 wheel/runtime baseline. The selected
+  pin matches `libks==1.0.5`, which is installed alongside content-validator by email-service; parser and reporter
+  fixtures cover the exercised behavior.
 - `Markdown` / unpinned -> `Markdown==3.10.2`: pinned to the resolved Python 3.11-compatible runtime set and covered by
   markdown diff fixtures.
 - `parse <= 1.8.2` / `parse==1.8.2` -> `parse==1.22.1`: latest available version passed parser, URL, and fixture
   coverage locally.
-- `sdiff @ git+https://github.com/KeepSafe/html-structure-diff.git@0.4.1` ->
-  `sdiff @ git+https://github.com/KeepSafe/html-structure-diff.git@1.0.0`: latest tagged version installed, imported,
-  and passed existing HTML/markdown structure-diff fixture coverage locally.
+- `sdiff @ git+https://github.com/KeepSafe/html-structure-diff.git@0.4.1` -> `sdiff==1.1.0`: select the reviewed Python
+  3.11 package release, remove the production Git dependency, and align downstream testing with the sibling
+  html-structure-diff Python 3.11 worktree.
 - `flake8==3.6.0` -> `flake8==7.3.0` plus `flake8-pyproject==1.2.4`: old flake8 fails with modern setuptools because
   `pkg_resources` is no longer available by default.
 - `nose` -> `pynose==1.5.5`: old nose fails on Python 3.11 due removed `collections.Callable`.
@@ -108,10 +109,10 @@ Upgraded because Python 3.11 compatibility or modern tooling required it:
 Dependency target refresh on 2026-07-21:
 
 - Team-required target: `aiohttp==3.13.2` (intentionally retained instead of a newer release).
-- Refreshed pins: `beautifulsoup4==4.15.0`, `lxml==6.1.1`, `parse==1.22.1`, and `coverage==7.15.2`.
+- Refreshed pins: `beautifulsoup4==4.15.0`, `lxml==6.0.2`, `parse==1.22.1`, and `coverage==7.15.2`.
 - Other validated pins: `Markdown==3.10.2`, `build==1.5.0`, `flake8==7.3.0`, `flake8-pyproject==1.2.4`,
   `pynose==1.5.5`, `twine==6.2.0`, `setuptools>=82.0.1`, and `wheel>=0.47.0`.
-- Current/latest git tag: `sdiff @ git+https://github.com/KeepSafe/html-structure-diff.git@1.0.0`.
+- Python 3.11 release target: `sdiff==1.1.0`; it must be published before content-validator 1.0.0.
 - Msgpack: not applicable. `msgpack` is not a `content-validator` dependency and there are no direct source/test
   msgpack call sites to migrate.
 
@@ -153,8 +154,8 @@ Completed applicable work:
 - Upgraded Python 3.11-incompatible dependencies:
   - `aiohttp >=3,<3.4` / `aiohttp==3.1.3` to the team-required `aiohttp==3.13.2`; old import failed on removed
     `asyncio.coroutines._DEBUG`.
-  - `beautifulsoup4` to `4.15.0`, `lxml` to `6.1.1`, `Markdown` to `3.10.2`, `parse` to `1.22.1`, and `sdiff` to
-    tag `1.0.0` as the latest Python 3.11 package set.
+  - `beautifulsoup4` to `4.15.0`, `lxml` to `6.0.2`, `Markdown` to `3.10.2`, `parse` to `1.22.1`, and `sdiff` to
+    package version `1.1.0` as the compatible downstream Python 3.11 package set.
   - `flake8==3.6.0` to `flake8==7.3.0` plus `flake8-pyproject==1.2.4`; old flake8 failed on removed
     `pkg_resources`.
   - `nose` to `pynose==1.5.5`; old nose failed on removed `collections.Callable`.
@@ -182,7 +183,7 @@ Proof results:
 - `venv/bin/pynose --version`: reports `1.5.5`.
 - `venv/bin/python -m compileall validator tests`: pass.
 - Import smoke for `validator`, `validator.checks.url`, `aiohttp==3.13.2`, `beautifulsoup4==4.15.0`,
-  `lxml==6.1.1`, `Markdown==3.10.2`, `parse==1.22.1`, and `sdiff==1.0.0`: pass.
+  `lxml==6.0.2`, `Markdown==3.10.2`, `parse==1.22.1`, and editable `sdiff==1.1.0`: pass.
 - `venv/bin/content-validator --help` and `venv/bin/content-validator --version`: pass.
 - `venv/bin/pip check`: pass.
 - `venv/bin/python -m build .`: pass; built local sdist and wheel under ignored `dist/`.
@@ -198,6 +199,17 @@ Service-only tasks intentionally skipped:
 
 Known gaps after migration:
 
-- Dependency installation/build proof required network access to package indexes and GitHub for the tagged `sdiff`
-  dependency.
+- `sdiff==1.1.0` must be published before a non-editable content-validator 1.0.0 installation can resolve.
 - Downstream repos still need their own requirements recompilation against `content-validator==1.0.0`.
+
+## Email-service downstream correction
+
+Date: 2026-08-04.
+
+The email-service resolver proof found that `libks==1.0.5` requires
+`lxml==6.0.2`. The previous content-validator pin, `lxml==6.1.1`, made the two
+packages impossible to resolve in one environment. The target is therefore
+`lxml==6.0.2`, which remains Python 3.11-compatible and is covered by the same
+parser, URL, report, and golden fixture tests. The same downstream audit
+replaces the Git-tagged sdiff dependency with the publishable `sdiff==1.1.0`
+package target.
