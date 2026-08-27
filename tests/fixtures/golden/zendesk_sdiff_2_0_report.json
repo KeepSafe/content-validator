@@ -1,0 +1,28 @@
+{
+  "error_messages": [
+    "There is an additional element `callout`.",
+    "There is a missing element `callout`."
+  ],
+  "left_content_text": [
+    "Save your recovery code",
+    "Open",
+    "Settings",
+    ".",
+    "Choose",
+    "Backup",
+    ".",
+    "Store the code safely."
+  ],
+  "left_diff_text": "\u00b6\n#Save your recovery code\n1. Open **Settings**.\n2. Choose **Backup**.\n\u00b6\nStore the code safely.",
+  "right_content_text": [
+    "Speichere deinen Wiederherstellungscode",
+    "Oeffne",
+    "Einstellungen",
+    ".",
+    "Waehle Backup.",
+    "Drucke den Code aus.",
+    "Bewahre den Code sicher auf."
+  ],
+  "right_diff_text": "\u00b6\n#Speichere deinen Wiederherstellungscode\n1. Oeffne **Einstellungen**.\n2. Waehle Backup.\n3. Drucke den Code aus.\n\u00b6\nBewahre den Code sicher auf.",
+  "sha256": "6b0ed4269fa75ba234cb27b081a4041e680287a6ddb760894ae058df6b8e49e1"
+}

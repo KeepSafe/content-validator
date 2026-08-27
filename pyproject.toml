@@ -24,7 +24,7 @@ dependencies = [
     "lxml==6.0.2",
     "Markdown==3.10.2",
     "parse==1.22.1",
-    "sdiff @ git+https://github.com/KeepSafe/html-structure-diff.git@7cac22038c90708296789197d8492d8aa16087be",
+    "sdiff @ git+https://github.com/KeepSafe/html-structure-diff.git@3bb941e9f1b209b17abe3b674d453ae829359665",
 ]
 
 [project.optional-dependencies]
@@ -42,6 +42,9 @@ content-validator = "validator:main"
 
 [project.urls]
 Homepage = "https://github.com/KeepSafe/content-validator/"
+
+[tool.setuptools]
+include-package-data = false
 
 [tool.setuptools.packages.find]
 exclude = ["tests"]
