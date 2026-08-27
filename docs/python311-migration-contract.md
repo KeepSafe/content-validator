@@ -81,6 +81,9 @@ validation behavior, and publishes dependency pins that downstream requirement c
   fingerprint as `email-service` before dependency installation. The current `KeepSafe/html-structure-diff` dependency
   is a KeepSafe-owned internal dependency installed from an immutable HTTPS commit. The key keeps CI ready for private
   organization dependencies and must be provisioned in this CircleCI project's SSH-key settings.
+- Travis runtime: applicable. Travis intentionally uses Ubuntu Jammy with Python `3.11.9`, the Python 3.11 patch
+  release supported by the established KeepSafe Travis environment. Local development and CircleCI remain on
+  `3.11.13`; all three environments stay within the package's `>=3.11,<3.12` policy.
 - `PYNOSE_SHARED_FLAGS`: applicable. Makefile test flow uses the sample-style coverage-inclusive pynose flags and adds
   CI XML/xunit artifact flags under `ifdef CI`.
 - Runtime `print()` guardrail: `ConsoleReporter` intentionally prints user-facing report output for a library reporter,
@@ -116,8 +119,9 @@ Dependency target refresh on 2026-08-27:
 - Other validated pins: `Markdown==3.10.2`, `build==1.5.0`, `flake8==7.3.0`, `flake8-pyproject==1.2.4`,
   `pynose==1.5.5`, `twine==6.2.0`, `setuptools>=82.0.1`, and `wheel>=0.47.0`.
 - Python 3.11 release target: `sdiff==2.0.0` with `mistune==3.3.4`, currently installed from immutable
-  html-structure-diff commit `3bb941e9f1b209b17abe3b674d453ae829359665` for pre-release proof. As of 2026-08-27,
-  GitHub has no permanent `2.0.0` tag/release and the internal index exposes only KeepSafe `sdiff` 1.0.0 and 0.4.1.
+  html-structure-diff commit `3bb941e9f1b209b17abe3b674d453ae829359665` for pre-release proof. Rechecked on
+  2026-08-27: GitHub has no permanent `2.0.0` tag/release and the internal index exposes only KeepSafe `sdiff` 1.0.0
+  and 0.4.1.
 - Msgpack: not applicable. `msgpack` is not a `content-validator` dependency and there are no direct source/test
   msgpack call sites to migrate.
 
@@ -181,8 +185,8 @@ Completed applicable work:
   `MANIFEST.in` so the source distribution contains the fixture tree needed to run these tests.
 - Added a minimal `content-validator` CLI help/version smoke surface because package metadata already declared the
   console script.
-- Updated README, Travis command, native CircleCI 2.1 config, Makefile, and git hook target for the Python 3.11
-  package workflow.
+- Updated README, Travis command/runtime (`dist: jammy`, Python `3.11.9`), native CircleCI 2.1 config, Makefile, and git
+  hook target for the Python 3.11 package workflow. Local development and CircleCI intentionally use Python `3.11.13`.
 - Refreshed the Makefile test flow to use sample-style `PYNOSE_SHARED_FLAGS`, including coverage-inclusive defaults and
   CI XML/xunit artifact flags under `ifdef CI`.
 - Added sample-style CI cache/install targets: `ci-env` reuses a valid cached venv or recreates it, and
@@ -208,9 +212,12 @@ Proof results:
   - A no-cache install of the built wheel cloned the exact sdiff commit, confirmed the four target package versions and
     public sdiff imports, passed CLI help/version and `pip check`, and reproduced focused equivalent/different Zendesk
     behavior.
-  - Both CircleCI validation modes and config processing passed locally. Remote CI is not claimed before this
-    uncommitted review diff is approved and pushed.
+  - Both CircleCI validation modes and config processing passed locally. Commit `79ccb6c` is pushed to
+    `origin/python311-upgrade`; live draft PR 39 checks were inspected on 2026-08-27 and its CircleCI `prepare_cache`,
+    `lint`, and `test` checks all passed. The uncommitted Travis runtime follow-up has not run remotely.
 - `python3.11 --version`: Python 3.11.13.
+- Travis follow-up: Ruby YAML parsing confirmed `.travis.yml` selects Ubuntu Jammy/Python `3.11.9` and retains
+  `make dev` plus `make test`; `.python-version` and CircleCI remain on Python `3.11.13`.
 - Historical migration `make clean`: pass. It was intentionally not rerun for the 2026-08-27 follow-up so the
   pre-existing untracked `.coverage` file remained present; fresh proof used isolated `/tmp` source exports instead.
 - `make dev`: pass with package-index/GitHub dependency resolution.
