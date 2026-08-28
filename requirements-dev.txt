@@ -1,4 +1,0 @@
--r requirements.txt
-flake8==3.6.0
-nose
-coverage

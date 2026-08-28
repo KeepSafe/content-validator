@@ -1,9 +1,10 @@
+dist: jammy
 language: python
 python:
-  - "3.6"
+  - 3.11.9
 # command to install dependencies
 install:
-  - make dev
+  - make ci-dev-install
 # command to run tests
 script:
-  - make tests
+  - make test
