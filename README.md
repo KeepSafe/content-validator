@@ -77,7 +77,7 @@ make focal-fossa-packages-local DIST_PATH=/tmp/packages SRC_PATH="$CONTENT_VALID
 TWINE_PASSWORD=<password> make upload-wheels
 
 # 4. Rebuild the package list on both pypicloud nodes.
-# http://10.10.1.143:8080/#/admin -> "Rebuild package list"
+# http://10.10.1.166:8080/#/admin -> "Rebuild package list"
 # http://10.10.2.107:8080/#/admin -> "Rebuild package list"
 
 # 5. Audit the uploaded wheel set.
@@ -104,7 +104,7 @@ The builder writes wheels and architecture-specific requirements under
 5. Push the tag with `git push origin <version>`.
 6. Run `make publish` using the pypicloud developer credentials from 1Password.
 7. Rebuild the package list on both internal nodes:
-   - `http://10.10.1.143:8080/#/admin`
+   - `http://10.10.1.166:8080/#/admin`
    - `http://10.10.2.107:8080/#/admin`
 
 `make publish` builds the source distribution and wheel, then uploads the wheel

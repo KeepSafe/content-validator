@@ -26,8 +26,8 @@ First write scope: this contract, packaging/test workflow, and golden compatibil
 
 Local scan found these active consumers:
 
-- `email-service`: depends on `content-validator` through `setup.py` / requirements and imports `validator` in
-  `mailman/cms/validation.py`.
+- `email-service`: declares the released `content-validator==1.0.0` package in `pyproject.toml` and imports
+  `validator` in `mailman/cms/validation.py`.
 - `translation-real-time-validaton`: pins `content-validator == 0.7.2`, imports `validator`, and directly imports
   `validator.checks.url.DEFAULT_USER_AGENT`, `TextUrlExtractor`, `UrlStatusChecker`, and `UrlDiff`.
 - `ansible`: installs `content-validator` for the `zendesk-knowledgebase-editor` role.
@@ -98,8 +98,8 @@ Upgraded because Python 3.11 compatibility or modern tooling required it:
 - `beautifulsoup4 >=4,<5` / `beautifulsoup4==4.4.1` -> `beautifulsoup4==4.15.0`: selected as the current Python
   3.11-compatible package set and covered by existing HTML/URL fixture tests.
 - `lxml >=3` / `lxml==3.5` -> `lxml==6.0.2`: old pin lacks the target Python 3.11 wheel/runtime baseline. The selected
-  pin matches `libks==1.0.5`, which is installed alongside content-validator by email-service; parser and reporter
-  fixtures cover the exercised behavior.
+  pin matches the final email-service `libks==1.0.12` dependency graph, which also requires `lxml==6.0.2`;
+  parser and reporter fixtures cover the exercised behavior.
 - `Markdown` / unpinned -> `Markdown==3.10.2`: pinned to the resolved Python 3.11-compatible runtime set and covered by
   markdown diff fixtures.
 - `parse <= 1.8.2` / `parse==1.8.2` -> `parse==1.22.1`: latest available version passed parser, URL, and fixture
@@ -272,20 +272,22 @@ Service-only tasks intentionally skipped:
 - No Gunicorn, PasteDeploy, service INI, health endpoint, worker, Docker local infra, or ansible service requirements
   pipeline was added.
 
-Known gaps after migration:
+Downstream status after migration:
 
-- `email-service` must regenerate its CI and final combined deployment requirements, remove the old sdiff/Mistune
-  entries, recreate its venv, and rerun standalone plus local integration proof against `content-validator==1.0.0`.
+- As of 2026-08-28, email-service PR #439 declares `content-validator==1.0.0`, consumes the published
+  `sdiff==2.0.0` and `mistune==3.3.4` chain, and includes it in the combined x86_64/aarch64 hash lock.
+- Its synchronized Python 3.11 environment passes `pip check`, and its local integration suite includes a real
+  in-memory Markdown structure comparison through content-validator, sdiff, and Mistune.
 
 ## Email-service downstream correction
 
-Date: 2026-08-04, updated 2026-08-27.
+Date: 2026-08-04, updated 2026-08-28.
 
-The email-service resolver proof found that `libks==1.0.5` requires
+The final email-service resolver proof confirms that `libks==1.0.12` requires
 `lxml==6.0.2`. The previous content-validator pin, `lxml==6.1.1`, made the two
 packages impossible to resolve in one environment. The target is therefore
 `lxml==6.0.2`, which remains Python 3.11-compatible and is covered by the same
 parser, URL, report, and golden fixture tests. The same downstream audit
-now has the content-validator review candidate consuming the published internal `sdiff==2.0.0` requirement with
-`mistune==3.3.4`. Email-service still needs regenerated requirements and downstream integration proof against the
-permanent release dependency chain.
+now has the released `content-validator==1.0.0` consuming the published internal `sdiff==2.0.0` requirement with
+`mistune==3.3.4`. Email-service PR #439 now carries the regenerated combined requirements and downstream integration
+proof against that permanent release dependency chain.
