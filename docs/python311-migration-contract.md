@@ -104,10 +104,10 @@ Upgraded because Python 3.11 compatibility or modern tooling required it:
   markdown diff fixtures.
 - `parse <= 1.8.2` / `parse==1.8.2` -> `parse==1.22.1`: latest available version passed parser, URL, and fixture
   coverage locally.
-- `sdiff @ git+https://github.com/KeepSafe/html-structure-diff.git@0.4.1` -> pre-release `sdiff==2.0.0` source at
-  immutable commit `3bb941e9f1b209b17abe3b674d453ae829359665`: consume the reviewed Mistune 3 compatibility line from
-  html-structure-diff PR 14 without resolving the unrelated public PyPI project. Replace this review pin with the
-  permanent `2.0.0` tag or proven internal artifact before finalizing release metadata.
+- `sdiff @ git+https://github.com/KeepSafe/html-structure-diff.git@0.4.1` -> internal `sdiff==2.0.0`: consume the
+  reviewed Mistune 3 compatibility line from html-structure-diff PR 14 without resolving the unrelated public PyPI
+  project. The permanent `2.0.0` tag resolves to reviewed commit
+  `3bb941e9f1b209b17abe3b674d453ae829359665`, and the internal package index now serves the corresponding wheel.
 - `flake8==3.6.0` -> `flake8==7.3.0` plus `flake8-pyproject==1.2.4`: old flake8 fails with modern setuptools because
   `pkg_resources` is no longer available by default.
 - `nose` -> `pynose==1.5.5`: old nose fails on Python 3.11 due removed `collections.Callable`.
@@ -118,10 +118,10 @@ Dependency target refresh on 2026-08-27:
 - Refreshed pins: `beautifulsoup4==4.15.0`, `lxml==6.0.2`, `parse==1.22.1`, and `coverage==7.15.2`.
 - Other validated pins: `Markdown==3.10.2`, `build==1.5.0`, `flake8==7.3.0`, `flake8-pyproject==1.2.4`,
   `pynose==1.5.5`, `twine==6.2.0`, `setuptools>=82.0.1`, and `wheel>=0.47.0`.
-- Python 3.11 release target: `sdiff==2.0.0` with `mistune==3.3.4`, currently installed from immutable
-  html-structure-diff commit `3bb941e9f1b209b17abe3b674d453ae829359665` for pre-release proof. Rechecked on
-  2026-08-27: GitHub has no permanent `2.0.0` tag/release and the internal index exposes only KeepSafe `sdiff` 1.0.0
-  and 0.4.1.
+- Python 3.11 release dependency: internal `sdiff==2.0.0` with `mistune==3.3.4`. Rechecked on 2026-08-27: GitHub's
+  annotated `2.0.0` tag resolves to commit `3bb941e9f1b209b17abe3b674d453ae829359665`, and pypicloud serves
+  `sdiff-2.0.0-py3-none-any.whl` with SHA-256
+  `dcf2dae503d92d31814a0de586454c024f5cedcae029f1c2d3f93540b361dadf`.
 - Msgpack: not applicable. `msgpack` is not a `content-validator` dependency and there are no direct source/test
   msgpack call sites to migrate.
 
@@ -171,12 +171,13 @@ Completed applicable work:
 - Replaced `setup.py` / `setup.cfg` with `pyproject.toml`.
 - Set Python policy to `3.11.13` in `.python-version` and `>=3.11,<3.12` in package metadata.
 - Bumped package version from `0.7.2` to `1.0.0`.
-- Hard-pinned runtime dependencies in `pyproject.toml` and aligned `requirements.txt`.
+- Hard-pinned runtime dependencies in `pyproject.toml` and generated the pypicloud-only, hash-enforced
+  `requirements/requirements.txt` deployment lock for both supported architectures.
 - Upgraded Python 3.11-incompatible dependencies:
   - `aiohttp >=3,<3.4` / `aiohttp==3.1.3` to the team-required `aiohttp==3.13.2`; old import failed on removed
     `asyncio.coroutines._DEBUG`.
   - `beautifulsoup4` to `4.15.0`, `lxml` to `6.0.2`, `Markdown` to `3.10.2`, `parse` to `1.22.1`, and `sdiff` to
-    pre-release package version `2.0.0` with `mistune==3.3.4` at an immutable reviewed commit.
+    internal package version `2.0.0` with `mistune==3.3.4`.
   - `flake8==3.6.0` to `flake8==7.3.0` plus `flake8-pyproject==1.2.4`; old flake8 failed on removed
     `pkg_resources`.
   - `nose` to `pynose==1.5.5`; old nose failed on removed `collections.Callable`.
@@ -190,13 +191,16 @@ Completed applicable work:
 - Refreshed the Makefile test flow to use sample-style `PYNOSE_SHARED_FLAGS`, including coverage-inclusive defaults and
   CI XML/xunit artifact flags under `ifdef CI`.
 - Added sample-style CI cache/install targets: `ci-env` reuses a valid cached venv or recreates it, and
-  `ci-dev-install` installs `requirements-dev.txt` from public sources before installing the package editable without
-  re-resolving dependencies. Local development and publishing retain the private-index-aware `PIP_ARGS` where needed.
+  `ci-dev-install` preinstalls the permanent sdiff Git tag derived from the exact project pin before installing the
+  package's `dev` extra from `pyproject.toml`. CircleCI does not install the pypicloud-only deployment lock. Local
+  development and publishing retain the private-index-aware `PIP_ARGS` where needed.
+- Added `check-sdiff-requirements` and `update-sdiff-requirements` targets. The helper enforces exact pin parity and
+  uses the Linux deployment builder for a targeted, hash-preserving pypicloud-only relock.
 - Added explicit dependency audit notes and latest-version proof for runtime, build, and test pins.
 
 Proof results:
 
-- Sdiff 2.0.0 downstream proof on 2026-08-27:
+- Sdiff 2.0.0 pre-release downstream proof on 2026-08-27:
   - `make dev` installed exact html-structure-diff commit `3bb941e9f1b209b17abe3b674d453ae829359665` as
     `sdiff==2.0.0` with `mistune==3.3.4`.
   - Focused golden proof passed equivalent and intentionally different nested Zendesk translations, exact
@@ -206,9 +210,9 @@ Proof results:
     `pip check`, compileall, CLI help, and CLI version passed.
   - Separate clean source exports passed both `make dev` and the CircleCI path `CI=1 make ci-dev-install`, followed
     by all 69 tests. Neither proof reused the worktree virtualenv.
-  - Isolated build and Twine checks passed. Built wheel metadata preserves the immutable sdiff commit reference. The
-    sdist contains the complete test/fixture tree and passes all 69 tests after extraction; the runtime wheel excludes
-    tests and fixtures.
+  - Isolated build and Twine checks passed. The candidate wheel metadata preserved the immutable sdiff commit
+    reference. The sdist contains the complete test/fixture tree and passes all 69 tests after extraction; the runtime
+    wheel excludes tests and fixtures.
   - A no-cache install of the built wheel cloned the exact sdiff commit, confirmed the four target package versions and
     public sdiff imports, passed CLI help/version and `pip check`, and reproduced focused equivalent/different Zendesk
     behavior.
@@ -216,19 +220,44 @@ Proof results:
     `origin/python311-upgrade`; live draft PR 39 checks were inspected on 2026-08-27 and its CircleCI `prepare_cache`,
     `lint`, and `test` checks all passed. The uncommitted Travis runtime follow-up has not run remotely.
 - `python3.11 --version`: Python 3.11.13.
-- Travis follow-up: Ruby YAML parsing confirmed `.travis.yml` selects Ubuntu Jammy/Python `3.11.9` and retains
-  `make dev` plus `make test`; `.python-version` and CircleCI remain on Python `3.11.13`.
-- Historical migration `make clean`: pass. It was intentionally not rerun for the 2026-08-27 follow-up so the
+- Travis follow-up: Ruby YAML parsing confirmed `.travis.yml` selects Ubuntu Jammy/Python `3.11.9` and uses the same
+  public-safe `make ci-dev-install` plus `make test` flow as CircleCI; `.python-version` and CircleCI remain on
+  Python `3.11.13`.
+- Published sdiff 2.0.0 follow-up proof on 2026-08-27:
+  - The internal simple index exposes `sdiff-2.0.0-py3-none-any.whl`; an isolated no-dependency download fetched that
+    exact artifact from pypicloud.
+  - A clean `make dev` selected the index-distributed `sdiff==2.0.0` (`direct_url.json` absent) with
+    `mistune==3.3.4`; `pip check`, lint, and all 69 tests passed with 1 expected skip and 84% coverage.
+  - A clean CircleCI-path install preinstalled permanent sdiff tag `2.0.0`, which resolves to reviewed commit
+    `3bb941e9f1b209b17abe3b674d453ae829359665`, then accepted the exact `sdiff==2.0.0` runtime requirement without
+    querying the private index. `make test` and `pip check` passed.
+  - The rebuilt content-validator wheel and sdist pass Twine checks. Wheel metadata contains the permanent
+    `Requires-Dist: sdiff==2.0.0` requirement instead of a VCS URL.
+  - The ansible two-pass builder flow produced `requirements/requirements.txt`, a pypicloud-only combined deployment
+    lock with hashes for x86_64 and aarch64. It is byte-for-byte identical to the final builder output under
+    `/tmp/packages/20.04/requirements.txt`.
+  - Clean focal-fossa x86_64 and aarch64 builder containers installed the combined lock from pypicloud, passed
+    `pip check`, and imported the expected `aiohttp==3.13.2`, `lxml==6.0.2`, and `sdiff==2.0.0` packages. The x86_64
+    proof also confirmed the complete runtime version set, including `mistune==3.3.4`.
+  - `make check-sdiff-requirements` passes. A disposable stale-pin check exits 1 without mutation, and a real
+    `sdiff==1.0.0` to `sdiff==2.0.0` builder round trip regenerated the exact committed lock with preserved hashes.
+  - A fresh public-index-only `make ci-dev-install` preinstalled the permanent sdiff Git tag, installed `.[dev]` from
+    `pyproject.toml`, and passed lint, all 69 tests, version checks, and `pip check` without pypicloud access.
+  - CircleCI config validation and processing pass with the `requirements/requirements.txt` cache key. Isolated wheel
+    and sdist builds pass Twine checks; the sdist includes the deployment lock and fixtures but no removed
+    `requirements-dev.txt`, and wheel metadata contains only the expected runtime and optional dev dependencies.
+- Historical migration `make clean`: pass. It was intentionally not rerun for the earlier 2026-08-27 follow-up so the
   pre-existing untracked `.coverage` file remained present; fresh proof used isolated `/tmp` source exports instead.
-- `make dev`: pass with package-index/GitHub dependency resolution.
-- `make ci-dev-install`: pass with public package-index/GitHub dependency resolution and no internal `pypicloud` probe.
+- `make dev`: pass with the published internal sdiff wheel and public fallback for dependencies not yet mirrored.
+- `make ci-dev-install`: pass with public package-index/GitHub dependency resolution and no internal `pypicloud` probe;
+  CI preinstalls the matching permanent sdiff tag before checking the exact version requirement.
 - `make test`: pass, 69 tests, 1 skipped, coverage total 84%.
 - `CI=1 make test`: pass, 69 tests, 1 skipped, writes `build/coverage/coverage.xml` and `build/test/results.xml`.
 - `venv/bin/flake8 --version`: reports `7.3.0` with `Flake8-pyproject: 1.2.4`.
 - `venv/bin/pynose --version`: reports `1.5.5`.
 - `venv/bin/python -m compileall validator tests`: pass.
 - Import smoke for `validator`, `validator.checks.url`, `aiohttp==3.13.2`, `beautifulsoup4==4.15.0`,
-  `lxml==6.0.2`, `Markdown==3.10.2`, `parse==1.22.1`, commit-pinned `sdiff==2.0.0`, and
+  `lxml==6.0.2`, `Markdown==3.10.2`, `parse==1.22.1`, index-pinned `sdiff==2.0.0`, and
   `mistune==3.3.4`: pass.
 - `venv/bin/content-validator --help` and `venv/bin/content-validator --version`: pass.
 - `venv/bin/pip check`: pass.
@@ -245,10 +274,8 @@ Service-only tasks intentionally skipped:
 
 Known gaps after migration:
 
-- `sdiff==2.0.0` has no permanent tag/release or internal-index artifact yet. The immutable commit is suitable for
-  review and pre-release proof only; finalize dependency metadata after one of those permanent sources exists.
-- `email-service` must regenerate both architecture-specific locks, remove the old sdiff/Mistune entries, recreate its
-  venv, and rerun standalone plus local integration proof against `content-validator==1.0.0`.
+- `email-service` must regenerate its CI and final combined deployment requirements, remove the old sdiff/Mistune
+  entries, recreate its venv, and rerun standalone plus local integration proof against `content-validator==1.0.0`.
 
 ## Email-service downstream correction
 
@@ -259,6 +286,6 @@ The email-service resolver proof found that `libks==1.0.5` requires
 packages impossible to resolve in one environment. The target is therefore
 `lxml==6.0.2`, which remains Python 3.11-compatible and is covered by the same
 parser, URL, report, and golden fixture tests. The same downstream audit
-now has the content-validator review candidate consuming the reviewed sdiff 2.0.0 source at immutable commit
-`3bb941e9f1b209b17abe3b674d453ae829359665` with `mistune==3.3.4`. Email-service still needs regenerated
-architecture-specific locks and downstream integration proof after the permanent sdiff 2.0.0 release source exists.
+now has the content-validator review candidate consuming the published internal `sdiff==2.0.0` requirement with
+`mistune==3.3.4`. Email-service still needs regenerated requirements and downstream integration proof against the
+permanent release dependency chain.

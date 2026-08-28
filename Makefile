@@ -5,6 +5,8 @@ FLAKE=venv/bin/flake8
 PYPICLOUD_HOST=pypicloud.getkeepsafe.local
 PIP_ARGS=--extra-index-url http://$(PYPICLOUD_HOST)/simple/ --trusted-host $(PYPICLOUD_HOST)
 TWINE=./venv/bin/twine
+SDIFF_VERSION=$(shell sed -n 's/^[[:space:]]*"sdiff==\([^"[:space:]]*\)"[[:space:]]*,[[:space:]]*$$/\1/p' pyproject.toml)
+SDIFF_CI_SOURCE=sdiff @ git+https://github.com/KeepSafe/html-structure-diff.git@$(SDIFF_VERSION)
 PYNOSE_SHARED_FLAGS=-s --with-coverage --cover-inclusive --cover-erase --cover-package=validator tests
 PYNOSE_FLAGS=$(PYNOSE_SHARED_FLAGS)
 ifdef CI
@@ -61,8 +63,14 @@ ci-env:
 	$(PIP) install -U pip setuptools wheel
 
 ci-dev-install: ci-env
-	$(PIP) install -r requirements-dev.txt
-	$(PIP) install --no-deps -e .
+	$(PIP) install "$(SDIFF_CI_SOURCE)"
+	$(PIP) install -e ".[dev]"
+
+check-sdiff-requirements:
+	./utils/update_sdiff_requirements.sh --check
+
+update-sdiff-requirements:
+	./utils/update_sdiff_requirements.sh
 
 hooks:
 	cp git_hooks/pre-push `git rev-parse --git-path hooks/pre-push`
@@ -89,4 +97,4 @@ clean:
 
 
 .PHONY: build-dir env dev install publish flake check-msgpack lint test-only test vtest vtests cov cover coverage ci-env \
-	ci-dev-install hooks unhooks clean
+	ci-dev-install check-sdiff-requirements update-sdiff-requirements hooks unhooks clean
