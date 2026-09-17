@@ -115,7 +115,7 @@ The standalone CLI works with Python 3.11+ and only the standard library for HTM
 python3 validator/structure.py < comparison.json
 ```
 
-Input is `{ "source": "...", "target": "...", "source_format": "html", "target_format": "html" }`, or `{ "pairs": [{ "id": "article/locale", "source": "...", "target": "..." }] }` for batch validation. Output is JSON; exit 0 means accepted, exit 1 means validation failed, and exit 2 means an invalid request. Optional `preserve_text: true` also compares text and attribute values for migration parity instead of permitting translation.
+Input is `{ "source": "...", "target": "...", "source_format": "html", "target_format": "html" }`, or `{ "pairs": [{ "id": "article/locale", "source": "...", "target": "..." }] }` for batch validation. Output is JSON; exit 0 means accepted and exit 1 means validation failed or the request was invalid. Optional `preserve_text: true` also compares text and attribute values for migration parity instead of permitting translation.
 
 This validator expects explicitly closed HTML fragments and rejects common malformed nesting instead of silently applying browser repairs. It is not a sanitizer, a complete HTML5 conformance validator, or proof of translation meaning. Placeholder support is an explicit subset (brace and printf forms), not a full ICU-message parser. Existing Markdown/URL checks retain their previous behavior; callers opt into this new contract.
 
