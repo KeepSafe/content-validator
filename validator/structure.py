@@ -18,7 +18,7 @@ BLOCK = frozenset(('address article aside blockquote body caption center dd deta
                    'menu nav ol p pre section summary table tbody td tfoot th thead tr ul').split())
 TRANSLATABLE_ATTRS = frozenset(('alt', 'title', 'aria-label'))
 TOKEN = re.compile(r'\{\{[^{}]+\}\}|\$\{[A-Za-z_][\w.-]*\}|\{[A-Za-z_][\w.-]*\}'
-                   r'|%(?:\([A-Za-z_][\w.-]*\)|\d+\$)?[-+#0]*\d*(?:\.\d+)?'
+                   r'|%%|%(?:\([A-Za-z_][\w.-]*\)|\d+\$)?[-+#0]*\d*(?:\.\d+)?'
                    r'(?:hh|ll|[hlLzjt])?[diouxXeEfFgGcrsa@]')
 DIRECTIVE = re.compile(r'^\s*:::', re.MULTILINE)
 SPACE = re.compile(r'\s+')
@@ -112,16 +112,26 @@ def _render(content, fmt, renderer):
         return content
     if fmt != 'markdown':
         raise ValueError('format must be html or markdown')
-    if renderer is None and DIRECTIVE.search(content):
-        raise ValueError('Markdown ::: directives require an authoritative renderer')
     if renderer is not None:
         rendered = renderer(content)
     else:
         import markdown
         rendered = markdown.markdown(content, extensions=['tables', 'fenced_code'])
+        if DIRECTIVE.search(_directive_text(_parse(rendered))):
+            raise ValueError('Markdown ::: directives require an authoritative renderer')
     if not isinstance(rendered, str):
         raise ValueError('Markdown renderer must return HTML as a string')
     return rendered
+
+
+def _directive_text(node):
+    """Inspect rendered prose so the Markdown renderer owns literal-code syntax."""
+    if node.tag == 'pre':
+        return '\n'
+    if node.tag == 'code':
+        return '\ufffc'  # Non-whitespace inline content, not a new line.
+    text = ''.join(child if isinstance(child, str) else _directive_text(child) for child in node.children)
+    return '\n' + text + '\n' if node.tag in BLOCK else text
 
 
 def _norm(text):
@@ -138,7 +148,7 @@ def _exact_text(node):
         if not isinstance(child, str):
             parts.append(_exact_text(child))
             continue
-        if not child.strip():
+        if not child.strip() and (node.tag == 'root' or node.tag in BLOCK):
             before = node.children[index - 1] if index else None
             after = node.children[index + 1] if index + 1 < len(node.children) else None
             before_is_block = before is None or isinstance(before, _Node) and before.tag in BLOCK
@@ -159,7 +169,29 @@ def _attrs(node):
 
 
 def _tokens(text):
-    return Counter(TOKEN.findall(text))
+    return Counter(token for token in TOKEN.findall(text) if token != '%%')
+
+
+def _prose_tokens(node):
+    """Count this block's prose without forming tokens across child blocks."""
+    found, parts = Counter(), []
+
+    def flush():
+        found.update(_tokens(''.join(parts)))
+        parts.clear()
+
+    def visit(element):
+        for child in element.children:
+            if isinstance(child, str):
+                parts.append(child)
+            elif child.tag in BLOCK:
+                flush()  # Child blocks are checked separately by _compare.
+            else:
+                visit(child)
+
+    visit(node)
+    flush()
+    return found
 
 
 def _element_children(node):
@@ -189,8 +221,9 @@ def _signature(node, include_content=False):
     if include_content:
         # Pair repeated tags by immutable content, even inside reordered wrappers.
         # Keep this separate from structural grouping so changes get precise errors.
-        signature += (_text(node) if node.tag in ('pre', 'code') else '',
-                      tuple((name, tuple(sorted(_tokens(node.attrs.get(name) or '').items())))
+        signature += (_text(node) if node.tag in ('pre', 'code') else '', bool(_norm(_text(node))),
+                      tuple((name, name in node.attrs, bool((node.attrs.get(name) or '').strip()),
+                             tuple(sorted(_tokens(node.attrs.get(name) or '').items())))
                             for name in sorted(TRANSLATABLE_ATTRS)))
     return signature
 
@@ -222,7 +255,7 @@ def _compare(source, target, path, errors, preserve_text):
     if source.tag in ('pre', 'code') and _text(source) != _text(target):
         _error(errors, 'code', path, 'code content differs')
     if source.tag == 'root' or source.tag in BLOCK:
-        if _tokens(_text(source)) != _tokens(_text(target)):
+        if _prose_tokens(source) != _prose_tokens(target):
             _error(errors, 'placeholder', path, 'protected placeholder identities or counts differ')
     if _norm(_text(source)) and not _norm(_text(target)):
         _error(errors, 'text', path, 'visible text was erased')
@@ -268,15 +301,18 @@ def validate_structure(source, target, source_format='html', target_format='html
     errors = []
     try:
         source_dom = _parse(_render(source, source_format, markdown_renderer))
-    except (ValueError, TypeError) as exc:
+    except (ValueError, TypeError, RecursionError) as exc:
         _error(errors, 'parse', 'source', str(exc))
         return {'ok': False, 'errors': errors}
     try:
         target_dom = _parse(_render(target, target_format, markdown_renderer))
-    except (ValueError, TypeError) as exc:
+    except (ValueError, TypeError, RecursionError) as exc:
         _error(errors, 'parse', 'target', str(exc))
         return {'ok': False, 'errors': errors}
-    _compare(source_dom, target_dom, '', errors, preserve_text)
+    try:
+        _compare(source_dom, target_dom, '', errors, preserve_text)
+    except RecursionError:
+        _error(errors, 'structure', '', 'document nesting exceeds comparison depth')
     return {'ok': not errors, 'errors': errors}
 
 
@@ -303,7 +339,7 @@ def main():
                                           request.get('source_format', 'html'),
                                           request.get('target_format', 'html'),
                                           preserve_text=request.get('preserve_text', False))
-    except (ValueError, TypeError, json.JSONDecodeError) as exc:
+    except (ValueError, TypeError, RecursionError) as exc:
         response = {'ok': False, 'errors': [{'code': 'input', 'path': '', 'message': str(exc)}]}
     json.dump(response, sys.stdout, ensure_ascii=False)
     sys.stdout.write('\n')

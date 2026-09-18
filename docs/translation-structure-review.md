@@ -53,11 +53,11 @@ The document-wide token count is unchanged, but the image description lost its p
 ## How to review a change
 
 1. Identify the comparison boundary. Is the change about document blocks, an inline run, an individual element, or an attribute? Check the rendered tree, including descendants of wrappers, instead of relying solely on the immediate tag name.
-2. Check matching before comparison. Repeated inline tags must match by protected structure and immutable content, independent of grammatical position or translated wording. Keep multiplicity: sets alone lose duplicate elements and tokens. Attribute tokens must remain attached to their corresponding elements when those elements reorder.
+2. Check matching before comparison. Repeated inline tags must match by protected structure and immutable content, independent of grammatical position or translated wording. Include attribute presence and empty/nonempty content when matching repeated tags; otherwise a valid reorder can look like erased text. Keep multiplicity: sets alone lose duplicate elements and tokens. Attribute tokens must remain attached to their corresponding elements when those elements reorder.
 3. Require an accepted translation example and a rejected corruption example for each rule. Overly strict validation is also a bug. Include repeated tags, nested wrappers, changed code, duplicated code, moved blocks, and tokens moved between attributes or between an attribute and prose.
-4. Confirm renderer parity. Ordinary Markdown may use the default renderer. Custom tabs, steps, callouts, and directives must use the publishing application's renderer. Unrendered `:::` directives must not silently pass as prose.
+4. Confirm renderer parity. Ordinary Markdown may use the default renderer. Custom tabs, steps, callouts, and directives must use the publishing application's renderer. Unrendered `:::` directives must not silently pass as prose. Literal directives inside fenced, indented, or inline code are valid examples; let the renderer identify those code regions.
 5. Review translation mode and `preserve_text=True` separately. The latter checks migration parity, including prose and attribute values. Do not weaken it merely to accept a translation; use translation mode for translated content.
-6. Verify the public API and JSON CLI. Cover accepted and rejected requests, batch result IDs, structured errors, and exit codes. Run the existing tests as well as the new regressions.
+6. Verify the public API and JSON CLI. Cover accepted and rejected requests, batch result IDs, structured errors, and exit codes. An excessively nested document must fail with a structured error while other batch items still receive results. Run the existing tests as well as the new regressions.
 
 Use TDD for fixes: add the smallest regression that expresses the contract, observe it fail on the original implementation, make the fix, then rerun the regression and relevant existing checks. Do not change expected outcomes merely to accommodate an implementation.
 
@@ -72,5 +72,7 @@ For a downstream integration, also run its adapter with real rendered articles a
 ## Limits to keep explicit
 
 Structural validation cannot establish translation quality or semantic equivalence. If two paragraphs have identical markup and no distinguishing protected content, swapping only their prose may be indistinguishable from translation. Preserving meaning, instruction completeness, and the relationship between translated wording and a link requires language review.
+
+Printf `%%` escapes a literal percent sign and is not a substitution. Placeholder scans must not join text from different blocks: `25%` at the end of one paragraph followed by “off” in another does not form `%o`. In migration-parity mode, preserve spaces inside inline elements when they separate visible words, while allowing layout whitespace between blocks.
 
 The parser rejects common malformed fragments but is neither a sanitizer nor a complete HTML5 conformance checker. Placeholder recognition covers the documented brace and printf subset, not arbitrary template languages or full ICU messages. Do not claim these broader guarantees from a passing structural check.

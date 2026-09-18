@@ -107,7 +107,7 @@ result = validate_structure(
 )
 ```
 
-For ordinary Markdown, pass `source_format='markdown'` and/or `target_format='markdown'`. The default uses Python Markdown. For custom syntax, supply `markdown_renderer=your_renderer`, or render both documents with the application's authoritative renderer and validate the resulting HTML. Unrendered `:::` directives are rejected: they must not silently pass as plain prose. The help-center app uses the HTML adapter so tabs, steps, callouts, and raw fragments are validated with exactly the renderer used by the website.
+For ordinary Markdown, pass `source_format='markdown'` and/or `target_format='markdown'`. The default uses Python Markdown. For custom syntax, supply `markdown_renderer=your_renderer`, or render both documents with the application's authoritative renderer and validate the resulting HTML. Unrendered `:::` directives outside literal code are rejected: they must not silently pass as plain prose. The help-center app uses the HTML adapter so tabs, steps, callouts, and raw fragments are validated with exactly the renderer used by the website.
 
 The standalone CLI works with Python 3.11+ and only the standard library for HTML inputs; the Markdown option additionally requires the `Markdown` package. From a pinned checkout, run:
 
@@ -119,7 +119,7 @@ Input is `{ "source": "...", "target": "...", "source_format": "html", "target_f
 
 This validator expects explicitly closed HTML fragments and rejects common malformed nesting instead of silently applying browser repairs. It is not a sanitizer, a complete HTML5 conformance validator, or proof of translation meaning. Placeholder support is an explicit subset (brace and printf forms), not a full ICU-message parser. Existing Markdown/URL checks retain their previous behavior; callers opt into this new contract.
 
-Inline code may reorder with the grammar of a translated paragraph while its exact content stays protected. Inline elements cannot cross block boundaries, including blocks inside link wrappers. Placeholders in accessible attributes are preserved per attribute, separately from prose.
+Inline code may reorder with the grammar of a translated paragraph while its exact content stays protected. Inline elements cannot cross block boundaries, including blocks inside link wrappers. Placeholders in accessible attributes are preserved per attribute, separately from prose. Printf `%%` escapes are treated as literals; placeholder scans do not join text across block boundaries. Excessively nested documents return structured failures, and other batch items still receive results.
 
 See the [translation structure code review guide](docs/translation-structure-review.md) for the contract, accepted and rejected examples, and review checks.
 

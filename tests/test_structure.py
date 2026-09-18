@@ -240,3 +240,109 @@ def test_cli_translation_contract_accepts_reordering_and_rejects_corruption():
             for result in response['results'][1:]:
                 assert result['errors']
                 assert all({'code', 'path', 'message'} <= error.keys() for error in result['errors'])
+
+
+@pytest.mark.parametrize('source,target,ok', [
+    ('%s', '%%s', False), ('%%s', '%s', False), ('%%s', '%%d', True),
+    ('%%%s', '%s', True), ('%%%%s', 'literal', True),
+    ('%1$s', '%%1$s', False), ('%(name)s', '%%(name)s', False),
+])
+def test_printf_escapes_are_not_substitutions(source, target, ok):
+    assert validate_structure('<p>' + source + '</p>', '<p>' + target + '</p>')['ok'] is ok
+
+
+@pytest.mark.parametrize('attribute', ['title', 'alt', 'aria-label'])
+def test_reordered_inline_elements_match_attribute_presence(attribute):
+    source = '<p><a href="/x" {}="Help">Help</a><a href="/x">More</a></p>'.format(attribute)
+    target = '<p><a href="/x">Mehr</a><a href="/x" {}="Hilfe">Hilfe</a></p>'.format(attribute)
+    assert validate_structure(source, target)['ok']
+    assert not validate_structure(source, target.replace(' {}="Hilfe"'.format(attribute), ''))['ok']
+
+
+@pytest.mark.parametrize('example', [
+    '```text\n::: note\nHello\n:::\n```',
+    '~~~text\n::: note\nHello\n:::\n~~~',
+    '    ::: note\n    Hello\n    :::',
+    '`example\n::: note`',
+])
+def test_literal_markdown_directives_in_code_are_accepted(example):
+    source = 'Example:\n\n' + example
+    target = 'Beispiel:\n\n' + example
+    assert validate_structure(source, target, source_format='markdown', target_format='markdown')['ok']
+    assert not validate_structure(source + '\n\n::: note', target,
+                                  source_format='markdown', target_format='markdown')['ok']
+
+
+@pytest.mark.parametrize('elements', [
+    ['<span></span>', '<span>Hello</span>'],
+    ['<a href="/x" title="">Help</a>', '<a href="/x" title="Help">Help</a>'],
+    ['<strong><span></span></strong>', '<strong><span>Hello</span></strong>'],
+])
+def test_reordering_preserves_empty_and_nonempty_inline_content(elements):
+    source = '<p>' + ''.join(elements) + '</p>'
+    target = '<p>' + ''.join(reversed(elements)) + '</p>'
+    assert validate_structure(source, target)['ok']
+    assert not validate_structure(source, '<p>' + elements[0] * 2 + '</p>')['ok']
+
+
+@pytest.mark.parametrize('source,target', [
+    ('<p>Save 25%</p><p>off everything</p>', '<p>Spare 25%</p><p>auf alles</p>'),
+    ('<p>{</p><p>name}</p>', '<p>{</p><p>Name}</p>'),
+    ('<div>{{<p>example</p>name}}</div>', '<div>{{<p>Beispiel</p>Name}}</div>'),
+    ('<a href="/x"><p>Save 25%</p></a><p>off everything</p>',
+     '<a href="/x"><p>Spare 25%</p></a><p>auf alles</p>'),
+])
+def test_placeholder_scanning_does_not_join_separate_blocks(source, target):
+    assert validate_structure(source, target)['ok']
+
+
+def test_real_placeholders_in_wrapped_blocks_remain_protected():
+    source = '<a href="/x"><p>Hello {{name}}</p></a><p>Next</p>'
+    assert validate_structure(source, source.replace('Hello', 'Hallo'))['ok']
+    target = '<a href="/x"><p>Hallo</p></a><p>Weiter {{name}}</p>'
+    assert 'placeholder' in codes(validate_structure(source, target))
+
+
+def test_deep_html_returns_structured_failure_instead_of_crashing():
+    shallow = '<span>Hello</span>'
+    assert validate_structure(shallow, shallow)['ok']
+    deep = '<span>' * 1100 + 'Hello' + '</span>' * 1100
+    result = validate_structure(deep, deep)
+    assert not result['ok']
+    assert result['errors']
+    assert {'code', 'path', 'message'} <= result['errors'][0].keys()
+
+
+def test_cli_batch_keeps_results_when_a_document_exceeds_recursion_depth():
+    script = Path(__file__).resolve().parents[1] / 'validator' / 'structure.py'
+    deep = '<span>' * 1100 + 'Hello' + '</span>' * 1100
+    request = {'pairs': [
+        {'id': 'deep', 'source': deep, 'target': deep},
+        {'id': 'good', 'source': '<p>Hello</p>', 'target': '<p>Hallo</p>'},
+    ]}
+    completed = subprocess.run([sys.executable, str(script)], input=json.dumps(request),
+                               text=True, capture_output=True, check=False)
+    assert not completed.stderr
+    assert completed.returncode == 1
+    response = json.loads(completed.stdout)
+    assert [(item['id'], item['ok']) for item in response['results']] == [('deep', False), ('good', True)]
+
+
+def test_cli_excessively_nested_json_returns_input_error():
+    script = Path(__file__).resolve().parents[1] / 'validator' / 'structure.py'
+    completed = subprocess.run([sys.executable, str(script)], input='[' * 1100 + '0' + ']' * 1100,
+                               text=True, capture_output=True, check=False)
+    assert not completed.stderr
+    assert completed.returncode == 1
+    assert 'input' in codes(json.loads(completed.stdout))
+
+
+@pytest.mark.parametrize('space,empty', [
+    ('<span> </span>', '<span></span>'),
+    ('<span><em> </em></span>', '<span><em></em></span>'),
+    ('<span>\n </span>', '<span></span>'),
+])
+def test_preserve_text_keeps_significant_whitespace_inside_inline_elements(space, empty):
+    source = '<p>Hello' + space + 'world</p>'
+    assert validate_structure(source, source, preserve_text=True)['ok']
+    assert 'text' in codes(validate_structure(source, '<p>Hello' + empty + 'world</p>', preserve_text=True))
