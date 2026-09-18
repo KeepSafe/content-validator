@@ -1,0 +1,25 @@
+version: 2.1
+
+jobs:
+  test:
+    docker:
+      - image: cimg/python:3.12.12
+    resource_class: small
+    environment:
+      # Override the legacy .python-version file in this checkout.
+      PYENV_VERSION: "3.12.12"
+    steps:
+      - checkout
+      - run:
+          name: Install test dependencies
+          command: python -m pip install -r .circleci/requirements.txt
+      - run:
+          name: Run the full test suite
+          command: python -m pytest -q --junitxml=temp/test-results/pytest.xml
+      - store_test_results:
+          path: temp/test-results
+
+workflows:
+  tests:
+    jobs:
+      - test

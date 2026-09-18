@@ -93,3 +93,53 @@ class TestEmail(TestCase):
         result = Validator(checks=[check], files=f, parser=parser, reporter=reporter)
         self.assertEqual({}, v.validate())
 ```
+
+## Rich Markdown and HTML translation structure
+
+`validator.structure.validate_structure` adds an opt-in structural contract for translated HTML and Markdown. It preserves block order/nesting, immutable attributes and link destinations, code, placeholder counts, and tab identity, while permitting translated prose, accessible text, and grammatical inline reordering. It returns `{ "ok": true, "errors": [] }` or structured errors with `code`, `path`, and `message`.
+
+```python
+from validator.structure import validate_structure
+
+result = validate_structure(
+    '<p>Hello {{name}}. <a href="/help">Help</a></p>',
+    '<p>Hallo {{name}}. <a href="/help">Hilfe</a></p>',
+)
+```
+
+For ordinary Markdown, pass `source_format='markdown'` and/or `target_format='markdown'`. The default uses Python Markdown. For custom syntax, supply `markdown_renderer=your_renderer`, or render both documents with the application's authoritative renderer and validate the resulting HTML. Unrendered `:::` directives outside literal code are rejected: they must not silently pass as plain prose. The help-center app uses the HTML adapter so tabs, steps, callouts, and raw fragments are validated with exactly the renderer used by the website.
+
+The standalone CLI works with Python 3.11+ and only the standard library for HTML inputs; the Markdown option additionally requires the `Markdown` package. From a pinned checkout, run:
+
+```sh
+python3 validator/structure.py < comparison.json
+```
+
+Input is `{ "source": "...", "target": "...", "source_format": "html", "target_format": "html" }`, or `{ "pairs": [{ "id": "article/locale", "source": "...", "target": "..." }] }` for batch validation. Output is JSON; exit 0 means accepted and exit 1 means validation failed or the request was invalid. Optional `preserve_text: true` also compares text and attribute values for migration parity instead of permitting translation.
+
+This validator expects explicitly closed HTML fragments and rejects common malformed nesting instead of silently applying browser repairs. It is not a sanitizer, a complete HTML5 conformance validator, or proof of translation meaning. Placeholder support is an explicit subset (brace and printf forms), not a full ICU-message parser. Existing Markdown/URL checks retain their previous behavior; callers opt into this new contract.
+
+Inline code may reorder with the grammar of a translated paragraph while its exact content stays protected. Inline elements cannot cross block boundaries, including blocks inside link wrappers. Placeholders in accessible attributes are preserved per attribute, separately from prose. Placeholder identity/count matching allows grammatical reordering, including unnumbered printf substitutions. Each token must stay intact within one text node; inline tags or comments cannot split it. Printf `%%` escapes are treated as literals; placeholder scans do not join text across block boundaries. Excessively nested documents return structured failures, and other batch items still receive results.
+
+See the [translation structure code review guide](docs/translation-structure-review.md) for the contract, accepted and rejected examples, and review checks.
+
+Targeted verification: `python -m pytest tests/test_structure.py`.
+
+## Continuous integration
+
+CircleCI runs the full pytest suite on Python 3.12.12 for each pushed branch and
+publishes JUnit results in the job's Tests tab. The configuration lives in
+`.circleci/config.yml`.
+
+To reproduce the job in a fresh Python 3.12 virtual environment:
+
+```sh
+python -m pip install -r .circleci/requirements.txt
+python -m pytest -q --junitxml=temp/test-results/pytest.xml
+```
+
+The CI dependency file pins a modern test environment while the separate Python
+upgrade work updates the legacy release dependencies in `setup.py` and
+`requirements.txt`. CI imports this checkout directly; it verifies source behavior,
+not installation with the legacy release dependency constraints. Once that upgrade
+lands, consolidate the CI and development dependency definitions.

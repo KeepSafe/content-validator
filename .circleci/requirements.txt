@@ -1,0 +1,10 @@
+# Python 3.12 test environment. Legacy release dependencies remain in setup.py.
+# Run tests against the checkout; do not install the legacy package dependencies.
+aiohttp==3.13.2
+beautifulsoup4==4.14.3
+lxml==6.0.2
+Markdown==3.10
+mistune==0.8.4
+parse==1.8.2
+pytest==9.0.2
+sdiff @ git+https://github.com/KeepSafe/html-structure-diff.git@12e7782208e4b458c8c4242882fda2377d9cba6b
