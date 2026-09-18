@@ -124,3 +124,22 @@ Inline code may reorder with the grammar of a translated paragraph while its exa
 See the [translation structure code review guide](docs/translation-structure-review.md) for the contract, accepted and rejected examples, and review checks.
 
 Targeted verification: `python -m pytest tests/test_structure.py`.
+
+## Continuous integration
+
+CircleCI runs the full pytest suite on Python 3.12.12 for each pushed branch and
+publishes JUnit results in the job's Tests tab. The configuration lives in
+`.circleci/config.yml`.
+
+To reproduce the job in a fresh Python 3.12 virtual environment:
+
+```sh
+python -m pip install -r .circleci/requirements.txt
+python -m pytest -q --junitxml=temp/test-results/pytest.xml
+```
+
+The CI dependency file pins a modern test environment while the separate Python
+upgrade work updates the legacy release dependencies in `setup.py` and
+`requirements.txt`. CI imports this checkout directly; it verifies source behavior,
+not installation with the legacy release dependency constraints. Once that upgrade
+lands, consolidate the CI and development dependency definitions.
