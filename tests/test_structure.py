@@ -156,3 +156,87 @@ def test_standalone_cli_single_and_batch():
     assert response['ok'] is False
     assert [(item['id'], item['ok']) for item in response['results']] == [('good', True), ('bad', False)]
     assert not completed.stderr
+
+
+@pytest.mark.parametrize('wrapper', ['<a href="/x">{}</a>', '<a href="/x"><span>{}</span></a>'])
+def test_block_wrappers_keep_their_place_in_document_order(wrapper):
+    source = wrapper.format('<h2>Title</h2>') + '<p>Body</p>'
+    translated = wrapper.format('<h2>Titel</h2>')
+    assert validate_structure(source, translated + '<p>Text</p>')['ok']
+    assert not validate_structure(source, '<p>Text</p>' + translated)['ok']
+
+
+def test_inline_elements_cannot_cross_a_block_boundary():
+    source = '<div><a href="/x">Help</a><p>Body</p></div>'
+    assert validate_structure(source, '<div><a href="/x">Hilfe</a><p>Text</p></div>')['ok']
+    assert not validate_structure(source, '<div><p>Text</p><a href="/x">Hilfe</a></div>')['ok']
+
+
+@pytest.mark.parametrize('attribute', ['alt', 'title', 'aria-label'])
+def test_attribute_placeholders_cannot_move_into_prose(attribute):
+    source = '<p><img src="/x" {}="Photo {{{{name}}}}">Hello</p>'.format(attribute)
+    target = '<p><img src="/x" {}="Foto">Hallo {{{{name}}}}</p>'.format(attribute)
+    assert 'placeholder' in codes(validate_structure(source, target))
+    translated = '<p><img src="/x" {}="Foto {{{{name}}}}">Hallo</p>'.format(attribute)
+    assert validate_structure(source, translated)['ok']
+
+
+def test_placeholders_cannot_move_between_attributes_or_elements():
+    source = '<p><img src="/x" alt="Photo {{name}}" title="Photo {{count}}"></p>'
+    target = '<p><img src="/x" alt="Foto {{count}}" title="Foto {{name}}"></p>'
+    assert 'placeholder' in codes(validate_structure(source, target))
+    source = '<p><img src="/x" alt="Photo {{name}}"><img src="/y" alt="Photo {{count}}"></p>'
+    target = '<p><img src="/x" alt="Foto {{count}}"><img src="/y" alt="Foto {{name}}"></p>'
+    assert 'placeholder' in codes(validate_structure(source, target))
+
+
+@pytest.mark.parametrize('wrapper', ['{}', '<strong>{}</strong>'])
+def test_inline_code_can_reorder_without_changing_content(wrapper):
+    foo = wrapper.format('<code>foo</code>')
+    bar = wrapper.format('<code>bar</code>')
+    source = '<p>Use {} before {}</p>'.format(foo, bar)
+    target = '<p>Vor {} nutze {}</p>'.format(bar, foo)
+    assert validate_structure(source, target)['ok']
+    assert not validate_structure(source, target.replace('foo', 'baz'))['ok']
+    assert not validate_structure(source, target.replace('foo', 'bar'))['ok']
+    assert not validate_structure(source, target, preserve_text=True)['ok']
+
+
+def test_repeated_inline_elements_match_their_attribute_placeholders_when_reordered():
+    source = '<p><img src="/x" alt="Photo {{name}}"><img src="/x" alt="Photo {{count}}"></p>'
+    target = '<p><img src="/x" alt="Foto {{count}}"><img src="/x" alt="Foto {{name}}"></p>'
+    assert validate_structure(source, target)['ok']
+    assert not validate_structure(source, target.replace('{{name}}', '{{count}}'))['ok']
+
+
+def test_markdown_inline_code_reordering():
+    assert validate_structure('Use `foo` before `bar`.', 'Vor `bar` nutze `foo`.',
+                              source_format='markdown', target_format='markdown')['ok']
+
+
+def test_cli_translation_contract_accepts_reordering_and_rejects_corruption():
+    script = Path(__file__).resolve().parents[1] / 'validator' / 'structure.py'
+    source_code = '<p>Use <code>foo</code> before <code>bar</code></p>'
+    reordered_code = '<p>Vor <code>bar</code> nutze <code>foo</code></p>'
+    pairs = [
+        {'id': 'grammar', 'source': source_code, 'target': reordered_code},
+        {'id': 'duplicate-code', 'source': source_code, 'target': reordered_code.replace('foo', 'bar')},
+        {'id': 'block-order', 'source': '<a href="/x"><h2>Title</h2></a><p>Body</p>',
+         'target': '<p>Text</p><a href="/x"><h2>Titel</h2></a>'},
+        {'id': 'attribute-token', 'source': '<p><img src="/x" alt="Photo {{name}}">Hello</p>',
+         'target': '<p><img src="/x" alt="Foto">Hallo {{name}}</p>'},
+    ]
+    for request, expected in [({'pairs': pairs}, False), (pairs[0], True)]:
+        completed = subprocess.run([sys.executable, str(script)], input=json.dumps(request),
+                                   text=True, capture_output=True, check=False)
+        response = json.loads(completed.stdout)
+        assert response['ok'] is expected
+        assert completed.returncode == (0 if expected else 1)
+        assert not completed.stderr
+        if 'pairs' in request:
+            assert [(item['id'], item['ok']) for item in response['results']] == [
+                ('grammar', True), ('duplicate-code', False), ('block-order', False), ('attribute-token', False),
+            ]
+            for result in response['results'][1:]:
+                assert result['errors']
+                assert all({'code', 'path', 'message'} <= error.keys() for error in result['errors'])

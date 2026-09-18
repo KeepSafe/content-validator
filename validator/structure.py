@@ -158,29 +158,41 @@ def _attrs(node):
     return attrs
 
 
-def _tokens(node):
-    found = Counter(TOKEN.findall(_text(node)))
-
-    def visit_attrs(element):
-        for name in TRANSLATABLE_ATTRS:
-            value = element.attrs.get(name)
-            if value:
-                found.update(TOKEN.findall(value))
-        for child in _element_children(element):
-            visit_attrs(child)
-
-    visit_attrs(node)
-    return found
+def _tokens(text):
+    return Counter(TOKEN.findall(text))
 
 
 def _element_children(node):
     return [child for child in node.children if isinstance(child, _Node)]
 
 
-def _signature(node):
+def _contains_block(node):
+    return node.tag in BLOCK or any(_contains_block(child) for child in _element_children(node))
+
+
+def _child_runs(node):
+    """Keep blocks (including wrappers) ordered and bound inline movement between them."""
+    blocks, runs = [], [[]]
+    for child in _element_children(node):
+        if _contains_block(child):
+            blocks.append(child)
+            runs.append([])
+        else:
+            runs[-1].append(child)
+    return blocks, runs
+
+
+def _signature(node, include_content=False):
     """Inline identity, independent of grammatical placement and translated text."""
-    return (node.tag, tuple(sorted(_attrs(node).items())),
-            tuple(sorted((_signature(child) for child in _element_children(node)), key=repr)))
+    signature = (node.tag, tuple(sorted(_attrs(node).items())),
+                 tuple(sorted((_signature(child, include_content) for child in _element_children(node)), key=repr)))
+    if include_content:
+        # Pair repeated tags by immutable content, even inside reordered wrappers.
+        # Keep this separate from structural grouping so changes get precise errors.
+        signature += (_text(node) if node.tag in ('pre', 'code') else '',
+                      tuple((name, tuple(sorted(_tokens(node.attrs.get(name) or '').items())))
+                            for name in sorted(TRANSLATABLE_ATTRS)))
+    return signature
 
 
 def _path(path, node, index):
@@ -203,12 +215,14 @@ def _compare(source, target, path, errors, preserve_text):
         if (name in source.attrs) != (name in target.attrs):
             _error(errors, 'attribute', path, '{} presence differs'.format(name))
         elif name in source.attrs:
+            if _tokens(source.attrs[name] or '') != _tokens(target.attrs[name] or ''):
+                _error(errors, 'placeholder', path, '{} placeholder identities or counts differ'.format(name))
             if source.attrs[name] and not (target.attrs[name] or '').strip():
                 _error(errors, 'text', path, '{} text was erased'.format(name))
     if source.tag in ('pre', 'code') and _text(source) != _text(target):
         _error(errors, 'code', path, 'code content differs')
     if source.tag == 'root' or source.tag in BLOCK:
-        if _tokens(source) != _tokens(target):
+        if _tokens(_text(source)) != _tokens(_text(target)):
             _error(errors, 'placeholder', path, 'protected placeholder identities or counts differ')
     if _norm(_text(source)) and not _norm(_text(target)):
         _error(errors, 'text', path, 'visible text was erased')
@@ -219,30 +233,28 @@ def _compare(source, target, path, errors, preserve_text):
     if preserve_text and _norm(_exact_text(source)) != _norm(_exact_text(target)):
         _error(errors, 'text', path, 'visible text differs')
 
-    source_children = _element_children(source)
-    target_children = _element_children(target)
-    # Block siblings retain order. Inline siblings may move around translated prose.
-    source_blocks = [child for child in source_children if child.tag in BLOCK]
-    target_blocks = [child for child in target_children if child.tag in BLOCK]
+    source_blocks, source_runs = _child_runs(source)
+    target_blocks, target_runs = _child_runs(target)
     if len(source_blocks) != len(target_blocks):
         _error(errors, 'structure', path, 'number of block elements differs')
     for index, (left, right) in enumerate(zip(source_blocks, target_blocks), 1):
         _compare(left, right, _path(path, left, index), errors, preserve_text)
 
-    source_inline = [child for child in source_children if child.tag not in BLOCK]
-    target_inline = [child for child in target_children if child.tag not in BLOCK]
-    source_groups = {}
-    target_groups = {}
-    for child in source_inline:
-        source_groups.setdefault(repr(_signature(child)), []).append(child)
-    for child in target_inline:
-        target_groups.setdefault(repr(_signature(child)), []).append(child)
-    if Counter({key: len(value) for key, value in source_groups.items()}) != Counter(
-            {key: len(value) for key, value in target_groups.items()}):
-        _error(errors, 'structure', path, 'inline element tags, nesting, or protected attributes differ')
-    for key in source_groups.keys() & target_groups.keys():
-        for index, (left, right) in enumerate(zip(source_groups[key], target_groups[key]), 1):
-            _compare(left, right, _path(path, left, index), errors, preserve_text)
+    for source_inline, target_inline in zip(source_runs, target_runs):
+        source_groups = {}
+        target_groups = {}
+        for child in source_inline:
+            source_groups.setdefault(repr(_signature(child)), []).append(child)
+        for child in target_inline:
+            target_groups.setdefault(repr(_signature(child)), []).append(child)
+        if Counter({key: len(value) for key, value in source_groups.items()}) != Counter(
+                {key: len(value) for key, value in target_groups.items()}):
+            _error(errors, 'structure', path, 'inline element tags, nesting, or protected attributes differ')
+        for key in sorted(source_groups.keys() & target_groups.keys()):
+            left_group = sorted(source_groups[key], key=lambda node: repr(_signature(node, include_content=True)))
+            right_group = sorted(target_groups[key], key=lambda node: repr(_signature(node, include_content=True)))
+            for index, (left, right) in enumerate(zip(left_group, right_group), 1):
+                _compare(left, right, _path(path, left, index), errors, preserve_text)
 
 
 def validate_structure(source, target, source_format='html', target_format='html',

@@ -119,4 +119,8 @@ Input is `{ "source": "...", "target": "...", "source_format": "html", "target_f
 
 This validator expects explicitly closed HTML fragments and rejects common malformed nesting instead of silently applying browser repairs. It is not a sanitizer, a complete HTML5 conformance validator, or proof of translation meaning. Placeholder support is an explicit subset (brace and printf forms), not a full ICU-message parser. Existing Markdown/URL checks retain their previous behavior; callers opt into this new contract.
 
-Targeted verification: `python -m pytest tests/test_structure.py` (29 tests).
+Inline code may reorder with the grammar of a translated paragraph while its exact content stays protected. Inline elements cannot cross block boundaries, including blocks inside link wrappers. Placeholders in accessible attributes are preserved per attribute, separately from prose.
+
+See the [translation structure code review guide](docs/translation-structure-review.md) for the contract, accepted and rejected examples, and review checks.
+
+Targeted verification: `python -m pytest tests/test_structure.py`.
