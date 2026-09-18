@@ -173,24 +173,17 @@ def _tokens(text):
 
 
 def _prose_tokens(node):
-    """Count this block's prose without forming tokens across child blocks."""
-    found, parts = Counter(), []
-
-    def flush():
-        found.update(_tokens(''.join(parts)))
-        parts.clear()
+    """Count intact tokens per text node, aggregated within this block."""
+    found = Counter()
 
     def visit(element):
         for child in element.children:
             if isinstance(child, str):
-                parts.append(child)
-            elif child.tag in BLOCK:
-                flush()  # Child blocks are checked separately by _compare.
-            else:
-                visit(child)
+                found.update(_tokens(child))
+            elif child.tag not in BLOCK:
+                visit(child)  # Child blocks are checked separately by _compare.
 
     visit(node)
-    flush()
     return found
 
 

@@ -346,3 +346,33 @@ def test_preserve_text_keeps_significant_whitespace_inside_inline_elements(space
     source = '<p>Hello' + space + 'world</p>'
     assert validate_structure(source, source, preserve_text=True)['ok']
     assert 'text' in codes(validate_structure(source, '<p>Hello' + empty + 'world</p>', preserve_text=True))
+
+
+@pytest.mark.parametrize('token,split', [
+    ('{{name}}', '{{<em>name</em>}}'),
+    ('{name}', '{<em>name</em>}'),
+    ('${name}', '${<em>name</em>}'),
+    ('%s', '%<em>s</em>'),
+    ('%1$s', '%1$<em>s</em>'),
+])
+def test_placeholders_must_stay_intact_within_one_text_node(token, split):
+    source = '<p>Hello ' + token + '<em>friend</em></p>'
+    target = '<p>Hallo ' + split + 'Freund</p>'
+    assert 'placeholder' in codes(validate_structure(source, target))
+    assert 'placeholder' in codes(validate_structure(target, source))
+    intact = '<p>Hallo <em>' + token + '</em>Freund</p>'
+    assert validate_structure(source, intact)['ok']
+
+
+def test_comment_cannot_split_a_placeholder():
+    source = '<p>Hello {{name}}</p>'
+    target = '<p>Hallo {{na<!-- comment -->me}}</p>'
+    assert 'placeholder' in codes(validate_structure(source, target))
+    assert validate_structure(source, '<p>Hallo <!-- comment -->{{name}}</p>')['ok']
+
+
+def test_printf_argument_order_can_follow_translation_grammar():
+    source = '<p>%s has %d files</p>'
+    assert validate_structure(source, '<p>%d Dateien hat %s</p>')['ok']
+    assert not validate_structure(source, '<p>%d Dateien hat %d</p>')['ok']
+    assert not validate_structure(source, '<p>%d Dateien</p>')['ok']

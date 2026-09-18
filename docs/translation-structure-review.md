@@ -14,7 +14,7 @@ This guide covers `validator/structure.py` and integrations that render Markdown
 | Inline elements next to blocks | Allow reordering within the same uninterrupted run; reject movement across a block boundary. |
 | Code | Preserve exact code content, including whitespace. Inline code may move as a unit within a paragraph; code blocks remain ordered. |
 | Link destinations and other protected attributes | Preserve values and their attachment to the corresponding element. Class order may vary in translation mode. |
-| Placeholders in prose | Preserve identities and counts within the containing block. Allow movement between prose and inline text within that block. |
+| Placeholders in prose | Preserve identities and counts within the containing block. Allow movement between prose and inline text within that block, but require each token to remain intact within a single text node. Tags or comments cannot split a token. |
 | Placeholders in `alt`, `title`, and `aria-label` | Preserve identities and counts separately in each attribute of the corresponding element. Surrounding prose or another attribute cannot compensate for a missing token. |
 | Prose and accessible descriptions | Allow translation; preserve attribute presence and reject erased text where checked. |
 | Platform tab labels | Preserve protected `iOS` and `Android` labels and tab identity. |
@@ -73,6 +73,6 @@ For a downstream integration, also run its adapter with real rendered articles a
 
 Structural validation cannot establish translation quality or semantic equivalence. If two paragraphs have identical markup and no distinguishing protected content, swapping only their prose may be indistinguishable from translation. Preserving meaning, instruction completeness, and the relationship between translated wording and a link requires language review.
 
-Printf `%%` escapes a literal percent sign and is not a substitution. Placeholder scans must not join text from different blocks: `25%` at the end of one paragraph followed by “off” in another does not form `%o`. In migration-parity mode, preserve spaces inside inline elements when they separate visible words, while allowing layout whitespace between blocks.
+Printf placeholders use identity/count matching, including unnumbered substitutions: their order may change with translation grammar. Callers must arrange interpolation accordingly; the validator does not enforce sequential argument binding. Printf `%%` escapes a literal percent sign and is not a substitution. Placeholder scans must not join text from different blocks: `25%` at the end of one paragraph followed by “off” in another does not form `%o`. In migration-parity mode, preserve spaces inside inline elements when they separate visible words, while allowing layout whitespace between blocks.
 
 The parser rejects common malformed fragments but is neither a sanitizer nor a complete HTML5 conformance checker. Placeholder recognition covers the documented brace and printf subset, not arbitrary template languages or full ICU messages. Do not claim these broader guarantees from a passing structural check.
