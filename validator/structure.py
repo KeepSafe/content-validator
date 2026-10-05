@@ -229,44 +229,83 @@ def _error(errors, code, path, message):
     errors.append({'code': code, 'path': path, 'message': message})
 
 
+def _json(value):
+    """Keep diagnostic values deterministic and readable inside the JSON message."""
+    return json.dumps(value, ensure_ascii=False, sort_keys=True)
+
+
+def _difference(message, expected, actual):
+    return '{}: expected {}; found {}'.format(message, _json(expected), _json(actual))
+
+
+def _inline_summary(signature):
+    tag, attrs, children = signature
+    return {'tag': tag, 'attrs': dict(attrs),
+            'children': [_inline_summary(child) for child in children]}
+
+
+def _inline_difference(source_groups, target_groups):
+    missing, unexpected = [], []
+    for key in sorted(source_groups.keys() | target_groups.keys()):
+        source_count = len(source_groups.get(key, []))
+        target_count = len(target_groups.get(key, []))
+        if source_count == target_count:
+            continue
+        group = source_groups[key] if source_count > target_count else target_groups[key]
+        summary = _inline_summary(_signature(group[0]))
+        summary['count'] = abs(source_count - target_count)
+        (missing if source_count > target_count else unexpected).append(summary)
+    return 'missing {}; unexpected {}'.format(_json(missing), _json(unexpected))
+
+
 def _compare(source, target, path, errors, preserve_text):
     if source.tag != target.tag:
         _error(errors, 'tag', path, 'expected <{}>, found <{}>'.format(source.tag, target.tag))
         return
     if _attrs(source) != _attrs(target):
-        _error(errors, 'attribute', path, 'protected attributes differ')
+        _error(errors, 'attribute', path, _difference('protected attributes differ', _attrs(source), _attrs(target)))
     if preserve_text and source.attrs != target.attrs:
-        _error(errors, 'attribute', path, 'attributes differ in exact-content mode')
+        _error(errors, 'attribute', path,
+               _difference('attributes differ in exact-content mode', source.attrs, target.attrs))
     for name in TRANSLATABLE_ATTRS:
         if (name in source.attrs) != (name in target.attrs):
-            _error(errors, 'attribute', path, '{} presence differs'.format(name))
+            _error(errors, 'attribute', path, '{} presence differs: expected {}; found {}'.format(
+                name, 'present' if name in source.attrs else 'absent',
+                'present' if name in target.attrs else 'absent'))
         elif name in source.attrs:
             if _tokens(source.attrs[name] or '') != _tokens(target.attrs[name] or ''):
-                _error(errors, 'placeholder', path, '{} placeholder identities or counts differ'.format(name))
+                _error(errors, 'placeholder', path,
+                       _difference('{} placeholder identities or counts differ'.format(name),
+                                   _tokens(source.attrs[name] or ''), _tokens(target.attrs[name] or '')))
             if source.attrs[name] and not (target.attrs[name] or '').strip():
                 _error(errors, 'text', path, '{} text was erased'.format(name))
     if source.tag in ('pre', 'code') and _text(source) != _text(target):
-        _error(errors, 'code', path, 'code content differs')
+        _error(errors, 'code', path, _difference('code content differs', _text(source), _text(target)))
     if source.tag == 'root' or source.tag in BLOCK:
         if _prose_tokens(source) != _prose_tokens(target):
-            _error(errors, 'placeholder', path, 'protected placeholder identities or counts differ')
+            _error(errors, 'placeholder', path,
+                   _difference('protected placeholder identities or counts differ',
+                               _prose_tokens(source), _prose_tokens(target)))
     if _norm(_text(source)) and not _norm(_text(target)):
         _error(errors, 'text', path, 'visible text was erased')
     if 'tab-label' in (source.attrs.get('class') or '').split():
         label = _norm(_text(source))
         if label in ('iOS', 'Android') and label != _norm(_text(target)):
-            _error(errors, 'platform_label', path, 'platform tab label changed')
+            _error(errors, 'platform_label', path,
+                   _difference('platform tab label changed', label, _norm(_text(target))))
     if preserve_text and _norm(_exact_text(source)) != _norm(_exact_text(target)):
         _error(errors, 'text', path, 'visible text differs')
 
     source_blocks, source_runs = _child_runs(source)
     target_blocks, target_runs = _child_runs(target)
     if len(source_blocks) != len(target_blocks):
-        _error(errors, 'structure', path, 'number of block elements differs')
+        _error(errors, 'structure', path, 'number of block elements differs: expected {} {}; found {} {}'.format(
+            len(source_blocks), _json([node.tag for node in source_blocks]),
+            len(target_blocks), _json([node.tag for node in target_blocks])))
     for index, (left, right) in enumerate(zip(source_blocks, target_blocks), 1):
         _compare(left, right, _path(path, left, index), errors, preserve_text)
 
-    for source_inline, target_inline in zip(source_runs, target_runs):
+    for run_index, (source_inline, target_inline) in enumerate(zip(source_runs, target_runs), 1):
         source_groups = {}
         target_groups = {}
         for child in source_inline:
@@ -275,7 +314,9 @@ def _compare(source, target, path, errors, preserve_text):
             target_groups.setdefault(repr(_signature(child)), []).append(child)
         if Counter({key: len(value) for key, value in source_groups.items()}) != Counter(
                 {key: len(value) for key, value in target_groups.items()}):
-            _error(errors, 'structure', path, 'inline element tags, nesting, or protected attributes differ')
+            _error(errors, 'structure', path,
+                   ('inline element tags, nesting, or protected attributes differ in inline run {}: {}').format(
+                       run_index, _inline_difference(source_groups, target_groups)))
         for key in sorted(source_groups.keys() & target_groups.keys()):
             left_group = sorted(source_groups[key], key=lambda node: repr(_signature(node, include_content=True)))
             right_group = sorted(target_groups[key], key=lambda node: repr(_signature(node, include_content=True)))
