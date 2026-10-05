@@ -92,3 +92,33 @@ def test_code_and_platform_label_diagnostics_identify_expected_and_found_content
                               '<h2 class="tab-label">iPhone</h2>')
     error = next(error for error in tabs['errors'] if error['code'] == 'platform_label')
     assert 'expected "iOS"; found "iPhone"' in error['message']
+
+
+def test_cli_surrogate_diagnostics_preserve_complete_batch_and_later_valid_pair():
+    script = Path(__file__).resolve().parents[1] / 'validator' / 'structure.py'
+    request = {'pairs': [
+        {'id': 'attribute', 'source': '<p id="\ud800">Hello</p>',
+         'target': '<p id="other">Hallo</p>'},
+        {'id': 'inline', 'source': '<p><a href="/\udfff">Hello</a></p>',
+         'target': '<p><a href="/other">Hallo</a></p>'},
+        {'id': 'placeholder', 'source': '<p>{{\ud800}}</p>', 'target': '<p>{{name}}</p>'},
+        {'id': 'code', 'source': '<pre><code>\udfff</code></pre>',
+         'target': '<pre><code>other</code></pre>'},
+        {'id': 'valid', 'source': '<p>Hello</p>', 'target': '<p>Hallo</p>'},
+    ]}
+    completed = subprocess.run([sys.executable, str(script)], input=json.dumps(request),
+                               text=True, capture_output=True, check=False)
+    assert completed.returncode == 1
+    assert completed.stderr == ''
+    response = json.loads(completed.stdout)
+    assert response['ok'] is False
+    assert [(item['id'], item['ok']) for item in response['results']] == [
+        ('attribute', False), ('inline', False), ('placeholder', False),
+        ('code', False), ('valid', True),
+    ]
+    assert response['results'][-1] == {'id': 'valid', 'ok': True, 'errors': []}
+    first_error = response['results'][0]['errors'][0]
+    assert first_error['code'] == 'attribute' and first_error['path'] == '/p[1]'
+    assert '\\ud800' in first_error['message']
+    for item in response['results'][:-1]:
+        assert all(set(error) == {'code', 'path', 'message'} for error in item['errors'])

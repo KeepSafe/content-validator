@@ -231,7 +231,7 @@ def _error(errors, code, path, message):
 
 def _json(value):
     """Keep diagnostic values deterministic and readable inside the JSON message."""
-    return json.dumps(value, ensure_ascii=False, sort_keys=True)
+    return json.dumps(value, ensure_ascii=True, sort_keys=True)
 
 
 def _difference(message, expected, actual):

@@ -62,9 +62,9 @@ The document-wide token count is unchanged, but the image description lost its p
 Use TDD for fixes: add the smallest regression that expresses the contract, observe it fail on the original implementation, make the fix, then rerun the regression and relevant existing checks. Do not change expected outcomes merely to accommodate an implementation.
 
 ```sh
-python -m pytest tests/test_structure.py
+python -m pytest tests/test_structure.py tests/test_structure_diagnostics.py
 python -m pytest
-flake8 validator/structure.py tests/test_structure.py
+flake8 validator/structure.py tests/test_structure.py tests/test_structure_diagnostics.py --max-line-length=120
 ```
 
 For a downstream integration, also run its adapter with real rendered articles and deliberate corruption. Report that evidence separately from synthetic validator fixtures.
