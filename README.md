@@ -121,9 +121,13 @@ This validator expects explicitly closed HTML fragments and rejects common malfo
 
 Inline code may reorder with the grammar of a translated paragraph while its exact content stays protected. Inline elements cannot cross block boundaries, including blocks inside link wrappers. Placeholders in accessible attributes are preserved per attribute, separately from prose. Placeholder identity/count matching allows grammatical reordering, including unnumbered printf substitutions. Each token must stay intact within one text node; inline tags or comments cannot split it. Printf `%%` escapes are treated as literals; placeholder scans do not join text across block boundaries. Excessively nested documents return structured failures, and other batch items still receive results.
 
+Structure error messages include deterministic JSON values for expected/found protected attributes and placeholder-count maps. Inline mismatches list missing/unexpected trees (`tag`, `attrs`, `children`, `count`) and identify the inline run; `count` is the missing or surplus multiplicity. Block-count mismatches include expected/found counts and ordered tags. Code and protected platform-label mismatches include expected/found content. These details stay inside `message`: the error object remains exactly `code`, `path`, and `message`, and acceptance rules and exit codes are unchanged. Consumers should branch on `code`, not parse the diagnostic wording.
+
+Paths describe the source comparison location, not a CSS selector or unique DOM address. Block indices are one-based positions among block-containing children. Inline indices are one-based positions within a matched identity group, so different inline groups can share a path; inline structure errors point to the containing element and identify the one-based run in the message. Run 1 precedes the first block-containing child, run 2 follows it, and so on. An empty path denotes the fragment root. For example, a changed link destination in `/p[1]` reports the missing link with its expected `href` and the unexpected link with its actual `href`, since inline matching uses protected attributes.
+
 See the [translation structure code review guide](docs/translation-structure-review.md) for the contract, accepted and rejected examples, and review checks.
 
-Targeted verification: `python -m pytest tests/test_structure.py`.
+Targeted verification: `python -m pytest tests/test_structure.py tests/test_structure_diagnostics.py`.
 
 ## Continuous integration
 
