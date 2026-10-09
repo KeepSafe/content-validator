@@ -91,10 +91,10 @@ def files(pattern, **kwargs):
     [[Path(path/to1/file1.txt), Path(path/to1/file2.txt)], [Path(path/to2/file1.txt), Path(path/to2/file2.txt)]]
     """
     # extract named parameters from the pattern
-    params = set([p for p in map(lambda e: e[1], Formatter().parse(pattern)) if p])
+    params = {p for p in map(lambda e: e[1], Formatter().parse(pattern)) if p}
     if params:
         if len(params - kwargs.keys()) > 0:
-            raise ValueError('missing parameters {} for pattern {}'.format(params - kwargs.keys(), pattern))
+            raise ValueError(f'missing parameters {params - kwargs.keys()} for pattern {pattern}')
         return _params_pattern(pattern, params, **kwargs)
     else:
         return _no_params_pattern(pattern)

@@ -5,7 +5,6 @@ import aiohttp
 import string
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse, urljoin
-from typing import List, Optional
 
 from ..errors import UrlDiff, UrlOccurencyDiff
 
@@ -23,7 +22,7 @@ class MissingUrlExtractorError(Exception):
 # the job of extractors is to find all non-parametrized urls in the given text for later checks via UrlValidator
 # which examines is particular url leads to working webpage (200 status)
 # since we are interested in all urls (including parametrized) we need to sligthly change their API and behaviour
-class TextUrlExtractor(object):
+class TextUrlExtractor:
     def __init__(self, **kwargs):
         pass
 
@@ -60,12 +59,12 @@ class HtmlUrlExtractor(TextUrlExtractor):
         return False
 
     def _extract_from_anchors(self, soup):
-        return set([a.get('href') or a.text for a in soup.find_all('a')])
+        return {a.get('href') or a.text for a in soup.find_all('a')}
 
     def _extract_from_img(self, soup):
         if self.skip_images:
             return set()
-        return set([img.get('src') for img in soup.find_all('img')])
+        return {img.get('src') for img in soup.find_all('img')}
 
     def _fix_url(self, url):
         result = ''
@@ -82,7 +81,7 @@ class HtmlUrlExtractor(TextUrlExtractor):
                 if re.match(self.url_pattern, full_url):
                     result = full_url
         else:
-            logging.error('{} not tested'.format(url_parsed.geturl()))
+            logging.error(f'{url_parsed.geturl()} not tested')
         return result
 
     def extract_urls(self, content, keep_placeholders=False):
@@ -96,20 +95,20 @@ class HtmlUrlExtractor(TextUrlExtractor):
         return result
 
 
-class UrlStatusChecker(object):
+class UrlStatusChecker:
     retry_max_count = 3
 
-    def __init__(self, headers=None, exclude_urls_regexs: Optional[List[str]] = None):
+    def __init__(self, headers=None, exclude_urls_regexs: list[str] | None = None):
         self._exclude_urls_regex = exclude_urls_regexs or []
         if self._exclude_urls_regex:
-            logging.warning('Excluded urls regexps: {}'.format(self._exclude_urls_regex))
+            logging.warning(f'Excluded urls regexps: {self._exclude_urls_regex}')
         self._headers = headers or {}
         if 'User-Agent' not in self._headers:
             self._headers['User-Agent'] = DEFAULT_USER_AGENT
 
     async def _make_request(self, url):
         try:
-            logging.info('checking {}'.format(url))
+            logging.info(f'checking {url}')
             async with aiohttp.request('get', url, headers=self._headers, allow_redirects=True) as res:
                 return res.status
         except Exception:
@@ -143,7 +142,7 @@ class UrlStatusChecker(object):
             if not is_exluded:
                 urls_without_excluded.append(url)
             else:
-                logging.warning('url {} excluded from status check'.format(url.url))
+                logging.warning(f'url {url.url} excluded from status check')
         tasks = [self._request_status_code(url.url) for url in urls_without_excluded]
         results = await asyncio.gather(*tasks)
         for index, url in enumerate(urls_without_excluded):
@@ -167,10 +166,10 @@ class UrlStatusChecker(object):
         return future.result()
 
 
-class UrlValidator(object):
+class UrlValidator:
     _extractors = {'txt': TextUrlExtractor, 'html': HtmlUrlExtractor}
 
-    def __init__(self, filetype, headers=None, exclude_status_check_regexs: Optional[List[str]] = None, **kwargs):
+    def __init__(self, filetype, headers=None, exclude_status_check_regexs: list[str] | None = None, **kwargs):
         self.client_headers = headers or {}
         self._excluded_status_check_regexs = exclude_status_check_regexs or []
         extractor_class = self._extractors.get(filetype)
@@ -179,7 +178,7 @@ class UrlValidator(object):
         self.extractor = extractor_class(**kwargs)
 
     def _get_urls(self, data, parser, reader):
-        flat_data = set(p for sublist in data for p in sublist)
+        flat_data = {p for sublist in data for p in sublist}
         # TODO yield instead
         urls = {}
         for element in flat_data:
