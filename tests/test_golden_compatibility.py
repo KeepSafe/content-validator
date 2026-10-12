@@ -104,7 +104,7 @@ class TestGoldenCompatibility(TestCase):
         self.assertEqual(expected, actual)
 
     def test_installed_sdiff_dependency_versions(self):
-        self.assertEqual('1.0.0', version('content-validator'))
+        self.assertEqual('1.0.1', version('content-validator'))
         self.assertEqual('2.0.0', version('sdiff'))
         self.assertEqual('3.3.4', version('mistune'))
         self.assertEqual('6.0.2', version('lxml'))
