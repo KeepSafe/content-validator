@@ -1,9 +1,12 @@
+import argparse
+from importlib.metadata import PackageNotFoundError, version
+
 import sdiff
 
 from . import parsers, checks, reports, fs
 
 
-class Validator(object):
+class Validator:
     def __init__(self, contents, parser, reader, check, reporter=None):
         self.contents = contents
         self.parser = parser
@@ -24,7 +27,7 @@ class Validator(object):
         return errors
 
 
-class ReportBuilder(object):
+class ReportBuilder:
     def __init__(self, contents, parser, reader, check):
         self.contents = contents
         self.parser = parser
@@ -49,7 +52,7 @@ class ReportBuilder(object):
         return Validator(self.contents, self.parser, self.reader, self.check, reporter).validate()
 
 
-class CheckBuilder(object):
+class CheckBuilder:
     def __init__(self, contents, content_type, parser, reader):
         self.contents = contents
         self.content_type = content_type
@@ -89,7 +92,7 @@ class CheckBuilder(object):
         return res
 
 
-class ParserBuilder(object):
+class ParserBuilder:
     def __init__(self, contents, reader=None):
         self.contents = contents
         self.content_type = 'txt'
@@ -120,7 +123,7 @@ class ParserBuilder(object):
         return CheckBuilder(self.contents, self.content_type, parser, self.reader)
 
 
-class ContentBuilder(object):
+class ContentBuilder:
     def files(self, pattern, **kwargs):
         contents = fs.files(pattern, **kwargs)
         return ParserBuilder(contents, parsers.FileReader())
@@ -140,3 +143,17 @@ class ContentBuilder(object):
 
 def parse():
     return ContentBuilder()
+
+
+def main(argv=None):
+    try:
+        package_version = version('content-validator')
+    except PackageNotFoundError:
+        package_version = 'unknown'
+    parser = argparse.ArgumentParser(
+        prog='content-validator',
+        description='Validate translated content with the validator Python API.',
+    )
+    parser.add_argument('--version', action='version', version='%(prog)s {}'.format(package_version))
+    parser.parse_args(argv)
+    return 0

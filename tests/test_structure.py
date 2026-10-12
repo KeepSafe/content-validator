@@ -3,8 +3,6 @@ from pathlib import Path
 import subprocess
 import sys
 
-import pytest
-
 from validator.structure import validate_structure
 
 
@@ -18,13 +16,17 @@ def test_translation_can_reorder_inline_markup_and_translate_accessible_text():
     assert validate_structure(source, target) == {'ok': True, 'errors': []}
 
 
-@pytest.mark.parametrize('target', [
-    '<p>Hallo <a href="/other">Hilfe</a>.</p>',
-    '<p>Hallo <a href="/help" id="new">Hilfe</a>.</p>',
-    '<p>Hallo <a href="/help" class="new">Hilfe</a>.</p>',
-    '<p>Hallo <a href="/help" data-kind="new">Hilfe</a>.</p>',
-])
-def test_protected_attributes_cannot_change(target):
+def test_protected_attributes_cannot_change():
+    for target in [
+        '<p>Hallo <a href="/other">Hilfe</a>.</p>',
+        '<p>Hallo <a href="/help" id="new">Hilfe</a>.</p>',
+        '<p>Hallo <a href="/help" class="new">Hilfe</a>.</p>',
+        '<p>Hallo <a href="/help" data-kind="new">Hilfe</a>.</p>',
+    ]:
+        yield check_protected_attributes_cannot_change, target
+
+
+def check_protected_attributes_cannot_change(target):
     source = '<p>Hello <a href="/help">help</a>.</p>'
     assert not validate_structure(source, target)['ok']
 
@@ -55,12 +57,16 @@ def test_tab_group_and_platform_label_are_protected():
     assert 'structure' in codes(validate_structure(source, missing))
 
 
-@pytest.mark.parametrize('target', [
-    '<p>Bonjour {{name}}; {count} éléments et %1$s.</p>',
-    '<p>Bonjour {{user}}; {count} éléments et %1$s.</p>',
-    '<p>Bonjour {{name}}; {count} éléments et %2$s.</p>',
-])
-def test_placeholder_identity_and_count_per_block(target):
+def test_placeholder_identity_and_count_per_block():
+    for target in [
+        '<p>Bonjour {{name}}; {count} éléments et %1$s.</p>',
+        '<p>Bonjour {{user}}; {count} éléments et %1$s.</p>',
+        '<p>Bonjour {{name}}; {count} éléments et %2$s.</p>',
+    ]:
+        yield check_placeholder_identity_and_count_per_block, target
+
+
+def check_placeholder_identity_and_count_per_block(target):
     source = '<p>Hello {{name}}, {{name}}; {count} items and %1$s.</p>'
     result = validate_structure(source, target)
     assert result['ok'] == (target.count('{{name}}') == 2)
@@ -98,13 +104,17 @@ def test_percentage_in_prose_is_not_mistaken_for_a_placeholder():
     assert validate_structure('<p>25% off</p>', '<p>25% Rabatt</p>')['ok']
 
 
-@pytest.mark.parametrize('html', [
-    '<p>Open', '<p><b>Text</p></b>', '<p>Text</div>', '<p>Text</p></p>',
-    '<p>Text<div>Other</div></p>', '<ul><li>First<li>Second</li></ul>',
-    '<table><tr><td>A<td>B</td></tr></table>', '<a href="/x"><a href="/y">B</a></a>',
-    '<div id="a" id="b"></div>', '<p/>',
-])
-def test_malformed_html_is_rejected_without_browser_repair(html):
+def test_malformed_html_is_rejected_without_browser_repair():
+    for html in [
+        '<p>Open', '<p><b>Text</p></b>', '<p>Text</div>', '<p>Text</p></p>',
+        '<p>Text<div>Other</div></p>', '<ul><li>First<li>Second</li></ul>',
+        '<table><tr><td>A<td>B</td></tr></table>', '<a href="/x"><a href="/y">B</a></a>',
+        '<div id="a" id="b"></div>', '<p/>',
+    ]:
+        yield check_malformed_html_is_rejected_without_browser_repair, html
+
+
+def check_malformed_html_is_rejected_without_browser_repair(html):
     result = validate_structure(html, '<p>Valid</p>')
     assert 'parse' in codes(result)
 
@@ -158,8 +168,12 @@ def test_standalone_cli_single_and_batch():
     assert not completed.stderr
 
 
-@pytest.mark.parametrize('wrapper', ['<a href="/x">{}</a>', '<a href="/x"><span>{}</span></a>'])
-def test_block_wrappers_keep_their_place_in_document_order(wrapper):
+def test_block_wrappers_keep_their_place_in_document_order():
+    for wrapper in ['<a href="/x">{}</a>', '<a href="/x"><span>{}</span></a>']:
+        yield check_block_wrappers_keep_their_place_in_document_order, wrapper
+
+
+def check_block_wrappers_keep_their_place_in_document_order(wrapper):
     source = wrapper.format('<h2>Title</h2>') + '<p>Body</p>'
     translated = wrapper.format('<h2>Titel</h2>')
     assert validate_structure(source, translated + '<p>Text</p>')['ok']
@@ -172,8 +186,12 @@ def test_inline_elements_cannot_cross_a_block_boundary():
     assert not validate_structure(source, '<div><p>Text</p><a href="/x">Hilfe</a></div>')['ok']
 
 
-@pytest.mark.parametrize('attribute', ['alt', 'title', 'aria-label'])
-def test_attribute_placeholders_cannot_move_into_prose(attribute):
+def test_attribute_placeholders_cannot_move_into_prose():
+    for attribute in ['alt', 'title', 'aria-label']:
+        yield check_attribute_placeholders_cannot_move_into_prose, attribute
+
+
+def check_attribute_placeholders_cannot_move_into_prose(attribute):
     source = '<p><img src="/x" {}="Photo {{{{name}}}}">Hello</p>'.format(attribute)
     target = '<p><img src="/x" {}="Foto">Hallo {{{{name}}}}</p>'.format(attribute)
     assert 'placeholder' in codes(validate_structure(source, target))
@@ -190,8 +208,12 @@ def test_placeholders_cannot_move_between_attributes_or_elements():
     assert 'placeholder' in codes(validate_structure(source, target))
 
 
-@pytest.mark.parametrize('wrapper', ['{}', '<strong>{}</strong>'])
-def test_inline_code_can_reorder_without_changing_content(wrapper):
+def test_inline_code_can_reorder_without_changing_content():
+    for wrapper in ['{}', '<strong>{}</strong>']:
+        yield check_inline_code_can_reorder_without_changing_content, wrapper
+
+
+def check_inline_code_can_reorder_without_changing_content(wrapper):
     foo = wrapper.format('<code>foo</code>')
     bar = wrapper.format('<code>bar</code>')
     source = '<p>Use {} before {}</p>'.format(foo, bar)
@@ -242,30 +264,42 @@ def test_cli_translation_contract_accepts_reordering_and_rejects_corruption():
                 assert all({'code', 'path', 'message'} <= error.keys() for error in result['errors'])
 
 
-@pytest.mark.parametrize('source,target,ok', [
-    ('%s', '%%s', False), ('%%s', '%s', False), ('%%s', '%%d', True),
-    ('%%%s', '%s', True), ('%%%%s', 'literal', True),
-    ('%1$s', '%%1$s', False), ('%(name)s', '%%(name)s', False),
-])
-def test_printf_escapes_are_not_substitutions(source, target, ok):
+def test_printf_escapes_are_not_substitutions():
+    for source, target, ok in [
+        ('%s', '%%s', False), ('%%s', '%s', False), ('%%s', '%%d', True),
+        ('%%%s', '%s', True), ('%%%%s', 'literal', True),
+        ('%1$s', '%%1$s', False), ('%(name)s', '%%(name)s', False),
+    ]:
+        yield check_printf_escapes_are_not_substitutions, source, target, ok
+
+
+def check_printf_escapes_are_not_substitutions(source, target, ok):
     assert validate_structure('<p>' + source + '</p>', '<p>' + target + '</p>')['ok'] is ok
 
 
-@pytest.mark.parametrize('attribute', ['title', 'alt', 'aria-label'])
-def test_reordered_inline_elements_match_attribute_presence(attribute):
+def test_reordered_inline_elements_match_attribute_presence():
+    for attribute in ['title', 'alt', 'aria-label']:
+        yield check_reordered_inline_elements_match_attribute_presence, attribute
+
+
+def check_reordered_inline_elements_match_attribute_presence(attribute):
     source = '<p><a href="/x" {}="Help">Help</a><a href="/x">More</a></p>'.format(attribute)
     target = '<p><a href="/x">Mehr</a><a href="/x" {}="Hilfe">Hilfe</a></p>'.format(attribute)
     assert validate_structure(source, target)['ok']
     assert not validate_structure(source, target.replace(' {}="Hilfe"'.format(attribute), ''))['ok']
 
 
-@pytest.mark.parametrize('example', [
-    '```text\n::: note\nHello\n:::\n```',
-    '~~~text\n::: note\nHello\n:::\n~~~',
-    '    ::: note\n    Hello\n    :::',
-    '`example\n::: note`',
-])
-def test_literal_markdown_directives_in_code_are_accepted(example):
+def test_literal_markdown_directives_in_code_are_accepted():
+    for example in [
+        '```text\n::: note\nHello\n:::\n```',
+        '~~~text\n::: note\nHello\n:::\n~~~',
+        '    ::: note\n    Hello\n    :::',
+        '`example\n::: note`',
+    ]:
+        yield check_literal_markdown_directives_in_code_are_accepted, example
+
+
+def check_literal_markdown_directives_in_code_are_accepted(example):
     source = 'Example:\n\n' + example
     target = 'Beispiel:\n\n' + example
     assert validate_structure(source, target, source_format='markdown', target_format='markdown')['ok']
@@ -273,26 +307,34 @@ def test_literal_markdown_directives_in_code_are_accepted(example):
                                   source_format='markdown', target_format='markdown')['ok']
 
 
-@pytest.mark.parametrize('elements', [
-    ['<span></span>', '<span>Hello</span>'],
-    ['<a href="/x" title="">Help</a>', '<a href="/x" title="Help">Help</a>'],
-    ['<strong><span></span></strong>', '<strong><span>Hello</span></strong>'],
-])
-def test_reordering_preserves_empty_and_nonempty_inline_content(elements):
+def test_reordering_preserves_empty_and_nonempty_inline_content():
+    for elements in [
+        ['<span></span>', '<span>Hello</span>'],
+        ['<a href="/x" title="">Help</a>', '<a href="/x" title="Help">Help</a>'],
+        ['<strong><span></span></strong>', '<strong><span>Hello</span></strong>'],
+    ]:
+        yield check_reordering_preserves_empty_and_nonempty_inline_content, elements
+
+
+def check_reordering_preserves_empty_and_nonempty_inline_content(elements):
     source = '<p>' + ''.join(elements) + '</p>'
     target = '<p>' + ''.join(reversed(elements)) + '</p>'
     assert validate_structure(source, target)['ok']
     assert not validate_structure(source, '<p>' + elements[0] * 2 + '</p>')['ok']
 
 
-@pytest.mark.parametrize('source,target', [
-    ('<p>Save 25%</p><p>off everything</p>', '<p>Spare 25%</p><p>auf alles</p>'),
-    ('<p>{</p><p>name}</p>', '<p>{</p><p>Name}</p>'),
-    ('<div>{{<p>example</p>name}}</div>', '<div>{{<p>Beispiel</p>Name}}</div>'),
-    ('<a href="/x"><p>Save 25%</p></a><p>off everything</p>',
-     '<a href="/x"><p>Spare 25%</p></a><p>auf alles</p>'),
-])
-def test_placeholder_scanning_does_not_join_separate_blocks(source, target):
+def test_placeholder_scanning_does_not_join_separate_blocks():
+    for source, target in [
+        ('<p>Save 25%</p><p>off everything</p>', '<p>Spare 25%</p><p>auf alles</p>'),
+        ('<p>{</p><p>name}</p>', '<p>{</p><p>Name}</p>'),
+        ('<div>{{<p>example</p>name}}</div>', '<div>{{<p>Beispiel</p>Name}}</div>'),
+        ('<a href="/x"><p>Save 25%</p></a><p>off everything</p>',
+         '<a href="/x"><p>Spare 25%</p></a><p>auf alles</p>'),
+    ]:
+        yield check_placeholder_scanning_does_not_join_separate_blocks, source, target
+
+
+def check_placeholder_scanning_does_not_join_separate_blocks(source, target):
     assert validate_structure(source, target)['ok']
 
 
@@ -337,25 +379,33 @@ def test_cli_excessively_nested_json_returns_input_error():
     assert 'input' in codes(json.loads(completed.stdout))
 
 
-@pytest.mark.parametrize('space,empty', [
-    ('<span> </span>', '<span></span>'),
-    ('<span><em> </em></span>', '<span><em></em></span>'),
-    ('<span>\n </span>', '<span></span>'),
-])
-def test_preserve_text_keeps_significant_whitespace_inside_inline_elements(space, empty):
+def test_preserve_text_keeps_significant_whitespace_inside_inline_elements():
+    for space, empty in [
+        ('<span> </span>', '<span></span>'),
+        ('<span><em> </em></span>', '<span><em></em></span>'),
+        ('<span>\n </span>', '<span></span>'),
+    ]:
+        yield check_preserve_text_keeps_significant_whitespace_inside_inline_elements, space, empty
+
+
+def check_preserve_text_keeps_significant_whitespace_inside_inline_elements(space, empty):
     source = '<p>Hello' + space + 'world</p>'
     assert validate_structure(source, source, preserve_text=True)['ok']
     assert 'text' in codes(validate_structure(source, '<p>Hello' + empty + 'world</p>', preserve_text=True))
 
 
-@pytest.mark.parametrize('token,split', [
-    ('{{name}}', '{{<em>name</em>}}'),
-    ('{name}', '{<em>name</em>}'),
-    ('${name}', '${<em>name</em>}'),
-    ('%s', '%<em>s</em>'),
-    ('%1$s', '%1$<em>s</em>'),
-])
-def test_placeholders_must_stay_intact_within_one_text_node(token, split):
+def test_placeholders_must_stay_intact_within_one_text_node():
+    for token, split in [
+        ('{{name}}', '{{<em>name</em>}}'),
+        ('{name}', '{<em>name</em>}'),
+        ('${name}', '${<em>name</em>}'),
+        ('%s', '%<em>s</em>'),
+        ('%1$s', '%1$<em>s</em>'),
+    ]:
+        yield check_placeholders_must_stay_intact_within_one_text_node, token, split
+
+
+def check_placeholders_must_stay_intact_within_one_text_node(token, split):
     source = '<p>Hello ' + token + '<em>friend</em></p>'
     target = '<p>Hallo ' + split + 'Freund</p>'
     assert 'placeholder' in codes(validate_structure(source, target))

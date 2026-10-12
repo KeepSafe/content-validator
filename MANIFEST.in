@@ -1,0 +1,5 @@
+include Makefile
+include requirements/requirements.txt
+include tests/__init__.py
+include tests/utils.py
+recursive-include tests/fixtures *.html *.json *.md *.txt *.xml

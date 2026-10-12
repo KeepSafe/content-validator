@@ -1,0 +1,18 @@
+{
+  "base": {
+    "diff": "<pre>\n<tabs>\n\n  \u00b6\n#Save your recovery code\n\n<steps>\n\n1. Open **Settings**.\n2. Choose **Backup**.\n\n</steps>\n\n<ins><callout yellow>\n\n  \u00b6\nStore the code safely.\n\n</callout>\n</ins></tabs>\n</pre>",
+    "html": "<p><tabs></p>\n<h1>Save your recovery code</h1>\n<p><steps></p>\n<ol>\n<li>Open <strong>Settings</strong>.</li>\n<li>Choose <strong>Backup</strong>.</li>\n</ol>\n<p></steps></p>\n<p><callout yellow></p>\n<p>Store the code safely.</p>\n<p></callout></p>\n<p></tabs></p>",
+    "original": "tests/fixtures/zendesk/different.en.md",
+    "parsed": "<tabs>\n\n# Save your recovery code\n\n<steps>\n\n1. Open **Settings**.\n2. Choose **Backup**.\n\n</steps>\n\n<callout yellow>\n\nStore the code safely.\n\n</callout>\n\n</tabs>\n"
+  },
+  "error_messages": [
+    "There is an additional element `callout`.",
+    "There is a missing element `callout`."
+  ],
+  "other": {
+    "diff": "<pre>\n<tabs>\n\n  \u00b6\n#Speichere deinen Wiederherstellungscode\n\n<steps>\n\n1. Oeffne **Einstellungen**.\n2. Waehle Backup.\n3. Drucke den Code aus.\n\n</steps>\n\n<del><callout red>\n\n  \u00b6\nBewahre den Code sicher auf.\n\n</callout>\n</del></tabs>\n</pre>",
+    "html": "<p><tabs></p>\n<h1>Speichere deinen Wiederherstellungscode</h1>\n<p><steps></p>\n<ol>\n<li>Oeffne <strong>Einstellungen</strong>.</li>\n<li>Waehle Backup.</li>\n<li>Drucke den Code aus.</li>\n</ol>\n<p></steps></p>\n<p><callout red></p>\n<p>Bewahre den Code sicher auf.</p>\n<p></callout></p>\n<p></tabs></p>",
+    "original": "tests/fixtures/zendesk/different.de.md",
+    "parsed": "<tabs>\n\n# Speichere deinen Wiederherstellungscode\n\n<steps>\n\n1. Oeffne **Einstellungen**.\n2. Waehle Backup.\n3. Drucke den Code aus.\n\n</steps>\n\n<callout red>\n\nBewahre den Code sicher auf.\n\n</callout>\n\n</tabs>\n"
+  }
+}
