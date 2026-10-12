@@ -198,3 +198,54 @@ class TestEmail(TestCase):
             .validate()
         self.assertEqual([], result)
 ```
+
+## Rich Markdown and HTML translation structure
+
+`validator.structure.validate_structure` adds an opt-in structural contract for translated HTML and Markdown. It preserves block order/nesting, immutable attributes and link destinations, code, placeholder counts, and tab identity, while permitting translated prose, accessible text, and grammatical inline reordering. It returns `{ "ok": true, "errors": [] }` or structured errors with `code`, `path`, and `message`.
+
+```python
+from validator.structure import validate_structure
+
+result = validate_structure(
+    '<p>Hello {{name}}. <a href="/help">Help</a></p>',
+    '<p>Hallo {{name}}. <a href="/help">Hilfe</a></p>',
+)
+```
+
+For ordinary Markdown, pass `source_format='markdown'` and/or `target_format='markdown'`. The default uses Python Markdown. For custom syntax, supply `markdown_renderer=your_renderer`, or render both documents with the application's authoritative renderer and validate the resulting HTML. Unrendered `:::` directives outside literal code are rejected: they must not silently pass as plain prose. The help-center app uses the HTML adapter so tabs, steps, callouts, and raw fragments are validated with exactly the renderer used by the website.
+
+The standalone CLI works with Python 3.11+ and only the standard library for HTML inputs; the Markdown option additionally requires the `Markdown` package. From a pinned checkout, run:
+
+```sh
+python3 validator/structure.py < comparison.json
+```
+
+Input is `{ "source": "...", "target": "...", "source_format": "html", "target_format": "html" }`, or `{ "pairs": [{ "id": "article/locale", "source": "...", "target": "..." }] }` for batch validation. Output is JSON; exit 0 means accepted and exit 1 means validation failed or the request was invalid. Optional `preserve_text: true` also compares text and attribute values for migration parity instead of permitting translation.
+
+This validator expects explicitly closed HTML fragments and rejects common malformed nesting instead of silently applying browser repairs. It is not a sanitizer, a complete HTML5 conformance validator, or proof of translation meaning. Placeholder support is an explicit subset (brace and printf forms), not a full ICU-message parser. Existing Markdown/URL checks retain their previous behavior; callers opt into this new contract.
+
+Inline code may reorder with the grammar of a translated paragraph while its exact content stays protected. Inline elements cannot cross block boundaries, including blocks inside link wrappers. Placeholders in accessible attributes are preserved per attribute, separately from prose. Placeholder identity/count matching allows grammatical reordering, including unnumbered printf substitutions. Each token must stay intact within one text node; inline tags or comments cannot split it. Printf `%%` escapes are treated as literals; placeholder scans do not join text across block boundaries. Excessively nested documents return structured failures, and other batch items still receive results.
+
+Structure error messages include deterministic JSON values for expected/found protected attributes and placeholder-count maps. Inline mismatches list missing/unexpected trees (`tag`, `attrs`, `children`, `count`) and identify the inline run; `count` is the missing or surplus multiplicity. Block-count mismatches include expected/found counts and ordered tags. Code and protected platform-label mismatches include expected/found content. These details stay inside `message`: the error object remains exactly `code`, `path`, and `message`, and acceptance rules and exit codes are unchanged. Consumers should branch on `code`, not parse the diagnostic wording.
+
+Paths describe the source comparison location, not a CSS selector or unique DOM address. Block indices are one-based positions among block-containing children. Inline indices are one-based positions within a matched identity group, so different inline groups can share a path; inline structure errors point to the containing element and identify the one-based run in the message. Run 1 precedes the first block-containing child, run 2 follows it, and so on. An empty path denotes the fragment root. For example, a changed link destination in `/p[1]` reports the missing link with its expected `href` and the unexpected link with its actual `href`, since inline matching uses protected attributes.
+
+See the [translation structure code review guide](docs/translation-structure-review.md) for the contract, accepted and rejected examples, and review checks.
+
+Targeted verification: `venv/bin/pynose tests/test_structure.py tests/test_structure_diagnostics.py`.
+
+## Continuous integration
+
+CircleCI runs the `prepare_cache`, `lint`, and `test` jobs on Python 3.11.13 for
+each pushed branch and publishes xUnit results in the job's Tests tab plus the
+coverage XML as an artifact. The configuration lives in `.circleci/config.yml`.
+
+To reproduce the jobs locally:
+
+```sh
+make ci-dev-install
+CI=1 make test
+```
+
+CI installs the package's `dev` extra from `pyproject.toml`, the same dependency
+source used for local development.
